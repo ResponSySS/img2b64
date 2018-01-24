@@ -40,3 +40,5 @@ TODO
 	Works on multiple <img> tags per line?
 	Works on badly formatted <img> tags?
 	Use libb64 right?
+	Use gnulib or libiberty??
+		gnulib requires autotools and so that's a fucking nope

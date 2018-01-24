@@ -58,7 +58,6 @@ main( int argc, char *argv[] )
 	FILE * test_file1;
 	FILE * test_file2;
 
-	usage( EXIT_SUCCESS );
 	usage( 127 );
 
 	fprintf( stderr, "Opening files...\n" );

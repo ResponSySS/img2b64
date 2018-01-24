@@ -14,3 +14,5 @@ EXAMPLES
         makes backup to 'page.html.old' and silently parse 'page.html'.
 CONTACT
     Written by Sylvain Saubier (<http://SystemicResponse.com>)
+
+// vim: ts=4:sw=4:expandtab
