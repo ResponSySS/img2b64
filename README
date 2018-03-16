@@ -1,13 +1,14 @@
 img2b64 v0.8
 Usage: img2b64 [OPTION]... {FILE}
-Convert all <img> tags of HTML file 'FILE' with base64 encoding and print result
+Convert all images with base64 encoding.
+Changes <img> tags of HTML file 'FILE' with their base64 strings and print result
 to standard output.
 
 OPTIONS
     -i, --in-place [SUFFIX]
                            edit files in place (makes backup if SUFFIX supplied)
     -n, --quiet            suppress automatic printing to standard output
-        --help             display this help and exit
+    -h, --help             display this help and exit
         --version          output version information and exit
 EXAMPLES
     img2b64 page.html -i.old --quiet
