@@ -20,19 +20,22 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <stdbool.h>
+#include <sys/stat.h>
 
-
+// GLOBALS
 #define PROGRAM_NAME 		"img2b64"
 #define VERSION 		"0.8"
 
-// Usually the BAD ones require an argument whereas the others don't
-#define ERR_MSG_NO_INPUT 	"no input file specified"
-#define ERR_MSG_BAD_ARG 	"unknown argument"
-#define ERR_MSG_BAD_FILE 	"file not found"
+// ERRORS
+// Sometimes require another argument for clarity (ones with 'y')
+#define ERR_MSG_NO_INPUT 	"no input file specified" 	
+#define ERR_MSG_BAD_ARG 	"unknown argument" 		// y
+#define ERR_MSG_NO_FILE 	"file does not exist" 		// y
+#define ERR_MSG_BAD_FILE 	"can't open file" 		// y
 
 #define XMALLOC_ERR_STR 	"out of memory allocating %lu bytes\n"
 
-// Options
+// OPTIONS
 #define SHORTOPTS 		"i::nh"
 bool quiet = false;
 bool in_place = false;
@@ -108,17 +111,54 @@ CONTACT\n\
 	exit(status);
 }
 
+void
+opt_print( const int argc, char *argv[] )
+{
+	puts( "---" );
+	printf( "optind==%d; argc==%d\n", optind, argc);
+	printf( "argv==\"");
+	int i = 0;
+	while (i < argc) {
+		printf( "%s\t", argv[i] );
+		i++;
+	}
+	printf( "\"\n");
+	printf( "QUIET is %sSET\n", quiet ? "" : "UN" );
+	printf( "SUFFIX is %s\n", in_place_suffix );
+	printf( "FILE COUNT is %d\n", argc-optind );
+	puts( "---" );
+	//be sure to flush stdout before resuming so it doesn't mix up things
+	fflush( stdout );
+}
+
+int
+infile_parse( char *pathname )
+{
+	if (access( pathname, R_OK|W_OK ) == -1) {
+		err_print ( ERR_MSG_NO_FILE, pathname); exit( errno );
+	}
+
+	FILE *infile;
+ 	infile = fopen( pathname, "r+" );
+	if (! infile) {
+		err_print( ERR_MSG_BAD_FILE, pathname ); exit( errno );
+	}
+
+	fclose( infile );
+}
+
 int
 main( int argc, char *argv[] )
 {
 	int opt;
-
 	static const struct option longopts[] = {
 		{ "in-place", 2, NULL, 'i' },
 		{ "quiet", 0, NULL, 'n'},
 		{ "help", 0, NULL, 'h'},
 		{ "version", 0, NULL, 'v'}
 	};
+
+	int count_infiles = 0;
 
 	if (argc < 2) 	{ err_print( ERR_MSG_NO_INPUT, "" ); usage(127); }
 //	err_print( ERR_MSG_NO_INPUT, "" );
@@ -153,10 +193,17 @@ main( int argc, char *argv[] )
 				break;
 		}				/* -----  end switch  ----- */
 	}
-	printf( "optind is %i, that is %s\n", optind, argv[optind] );
-	printf( "QUIET is %sSET\n", quiet ? "" : "UN" );
-	printf( "SUFFIX is %s\n", in_place_suffix );
+#ifdef DEBUG
+	opt_print(argc, argv);
+#endif
 
+	count_infiles = argc - optind;
+
+	if (count_infiles <= 0) 	{ err_print( ERR_MSG_NO_INPUT, "" ) ; }
+	while (count_infiles > 0) {
+		infile_parse( argv[optind] );
+		optind++; count_infiles--;
+	}
 	//FILE *infile;
 	//
 	//arg parsing
