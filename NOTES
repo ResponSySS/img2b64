@@ -33,8 +33,14 @@ ALGO
 7. call b64 encoding func with SRC_PATH argument, which gives B64_STR
 8. replaces SRC_PATH with B64_STR
 
+READING RESOURCES
+	* `cd` to the dir containing the HTML file before analyzing it or: `pwd`+ dirname of HTML file + pathname to resource
+	* find a way to make absolute pathes work ('--root' option to specify where the root is located)
+
 MATCHING REGEX
-	^.*<img\s*src=['"]\([^"']*\)['"].*$
+	^.*<img\s*src\s*=\s*['"]\([^"']\+\)['"].*$
+	.*src[[:blank:]]*=[[:blank:]]*["'][[:blank:]]*([^"']+)[[:blank:]]*["']
+									   ^ weakness here: should really be same as the first match of ['"]
 
 CORRECT SRC FOR B64 IMG
 	src="\s*data:\s*image\s*/\s*(gif|jpeg|png|(x-)?bmp|x-icon)\s*[;\s*charset\s*=\s*utf-8\s*];\s*base64\s*,\s*{BASE64STRING}\s*"

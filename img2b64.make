@@ -64,6 +64,8 @@ endif
 OBJECTS :=
 
 OBJECTS += $(OBJDIR)/img2b64.o
+OBJECTS += $(OBJDIR)/regexp.o
+OBJECTS += $(OBJDIR)/utils.o
 
 # Rules
 # #############################################
@@ -128,6 +130,12 @@ endif
 # #############################################
 
 $(OBJDIR)/img2b64.o: img2b64.c
+	@echo $(notdir $<)
+	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/regexp.o: regexp.c
+	@echo $(notdir $<)
+	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/utils.o: utils.c
 	@echo $(notdir $<)
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 

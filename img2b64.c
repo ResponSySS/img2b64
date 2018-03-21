@@ -1,7 +1,5 @@
 /*
  * =====================================================================================
- *    Description:  
- *
  *        Created:  12/06/2017 09:30:51 PM
  *       Compiler:  gcc
  *
@@ -9,7 +7,6 @@
  * =====================================================================================
  */
 
-#define _GNU_SOURCE 1 /* Required by asprintf */
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -22,129 +19,101 @@
 #include <stdbool.h>
 #include <sys/stat.h>
 
-// GLOBALS
-#define PROGRAM_NAME 		"img2b64"
-#define VERSION 		"0.8"
+#include "img2b64.h"
 
-// ERRORS
-// Sometimes require another argument for clarity (ones with 'y')
-#define ERR_MSG_NO_INPUT 	"no input file specified" 	
-#define ERR_MSG_BAD_ARG 	"unknown argument" 		// y
-#define ERR_MSG_NO_FILE 	"file does not exist" 		// y
-#define ERR_MSG_BAD_FILE 	"can't open file" 		// y
-
-#define XMALLOC_ERR_STR 	"out of memory allocating %lu bytes\n"
-
-// OPTIONS
-#define SHORTOPTS 		"i::nh"
-bool quiet = false;
-bool in_place = false;
-char *in_place_suffix = NULL;
-
-
-void
-err_print( const char *err_str, const char *opt )
-{
-	fprintf( stderr, "%s: %s%s%s\n", PROGRAM_NAME, err_str, *opt ? ": " : "", opt );
-}
-
-void
-xmalloc_failed (size_t size)
-{
-	char *err_str;
-	asprintf( &err_str, XMALLOC_ERR_STR, size );
-	err_print( err_str, "" );
-
-	exit( EXIT_FAILURE );
-}
-
-void *
-xmalloc (size_t size)
-{
-	void *newmem;
-
-	if (size == 0) 	{ size = 1; }
-	newmem = malloc (size);
-	if (!newmem) 	{ xmalloc_failed (size); }
-
-	return (newmem);
-}
-
-void
-version_print( void )
-{
-	fprintf( stdout, "%s v%s\n\
-Written by Sylvain Saubier (<http://SystemicResponse.com>)\n\
-Report bugs to: <feedback@systemicresponse.com>\n", 
-		PROGRAM_NAME, VERSION);
-}
-
-noreturn void
-usage( int status )
-{
-	FILE *out = status ? stderr : stdout;
-
-	fprintf(out, "%s v%s\nUsage: %s [OPTION]... {FILE}\n",
-		PROGRAM_NAME, VERSION, PROGRAM_NAME);
-	fputs("\
-Convert all images with base64 encoding.\n\
-Changes <img> tags of HTML file 'FILE' with their base64 strings and print result\n\
-to standard output.\n\n\
-OPTIONS\n\
-    -i, --in-place [SUFFIX]\n\
-                           edit files in place (makes backup if SUFFIX supplied)\n\
-    -n, --quiet            suppress automatic printing to standard output\n\
-    -h, --help             display this help and exit\n\
-        --version          output version information and exit\n\
-EXAMPLES\n", out);
-	fprintf(out, "    %s page.html -i.old --quiet\n", PROGRAM_NAME);
-	fputs
-	    ("        makes backup to 'page.html.old' and silently parse 'page.html'.\n",
-	     out);
-	fputs("\
-CONTACT\n\
-    Written by Sylvain Saubier (<http://SystemicResponse.com>)\n", out);
-	if (status)
-		fputs("\
-    Report bugs to: <feedback@systemicresponse.com>\n", out);
-
-	exit(status);
-}
-
-void
-opt_print( const int argc, char *argv[] )
-{
-	puts( "---" );
-	printf( "optind==%d; argc==%d\n", optind, argc);
-	printf( "argv==\"");
-	int i = 0;
-	while (i < argc) {
-		printf( "%s\t", argv[i] );
-		i++;
-	}
-	printf( "\"\n");
-	printf( "QUIET is %sSET\n", quiet ? "" : "UN" );
-	printf( "SUFFIX is %s\n", in_place_suffix );
-	printf( "FILE COUNT is %d\n", argc-optind );
-	puts( "---" );
-	//be sure to flush stdout before resuming so it doesn't mix up things
-	fflush( stdout );
-}
 
 int
-infile_parse( char *pathname )
+infile_parse( struct open_file_s infile )
 {
-	if (access( pathname, R_OK|W_OK ) == -1) {
-		err_print ( ERR_MSG_NO_FILE, pathname); exit( errno );
+	printf( "=== READING '%s'\n", infile.path );
+	char buf[SIZE_FREAD_BUFF];
+	char buf_cp[SIZE_FREAD_BUFF];
+	char *ptr_img_start = NULL;
+	char *ptr_img_end = NULL;
+	char *img_tag_full = NULL;
+	char *src = NULL;
+//	while (fread( buf, sizeof(char), SIZE_FREAD_BUFF, infile.fp )) {
+// 		printf( "-%s", buf);
+// 		//looking for '<'
+// 		char *ptr_img_start = strchr( buf, '<' );
+// 		printf( "this must be '<': ...%c%c%c...", *(ptr_img_start-1), *(ptr_img_start), *(ptr_img_start+1) );
+// 		//retrieves next 3 chars
+// 		//ensure no EOF, nor end of buf
+// 		//if == "img", then go to next step
+// 	}
+
+	while ((fread( buf, sizeof(char), SIZE_FREAD_BUFF, infile.fp )) != NULL) {
+	 	if ((ptr_img_start = strcasestr( buf, "<img" )) != NULL) {
+			printf( "IMG TAG STARTS AT: %.10s\n", ptr_img_start );
+			if ((ptr_img_end = strcasestr( ptr_img_start, "/>" )) != NULL) {
+				printf( " IMG ENDS AT: %.10s", ptr_img_end );
+
+				ssize_t char_count = ptr_img_end - ptr_img_start;
+				//+ 1 for null byte at the end
+				img_tag_full = xmalloc( sizeof(char) * (char_count + 1));
+				strncpy( img_tag_full, ptr_img_start, char_count );
+				img_tag_full[char_count] = '\0';
+
+				// Removes newline characters inside <img> tag
+				char *nl = NULL;
+				while ((nl = strchr( img_tag_full, '\n' )) != NULL) {
+					*nl = ' ';
+				}
+				printf( "  FULL is %ld long\n --- \n%s\n ---",
+					char_count, img_tag_full );
+				src = regex_extract_src( img_tag_full );
+				free( img_tag_full );
+			}
+		}
+	// 	if (feof( infile.fp ) != 0) {
+	//		//EOF reached
+	//		puts( "EOF reached: bye!" );
+	//		return EXIT_SUCCESS;
+	// 	}
+	}
+// while (fgets( buf, SIZE_FREAD_BUFF, infile.fp ) != NULL) {
+// 	//looking for '<img'
+//  	if ((ptr_img_start = strcasestr( buf, "<img" )) != NULL) {
+// 		ptr_img_full = ptr_img_start;
+// 		printf( "IMG TAG STARTS AT: %s", ptr_img_start );
+// 		//looking for 'src'
+// 		int nl_count = 0;
+// 		while ((ptr_img_end = strcasestr( buf, "/>" )) == NULL) {
+// 			fgets( buf, SIZE_FREAD_BUFF, infile.fp );
+// 			//ensure buf is not empty for strtok
+// 			if (buf[0] != '\0') {
+// 				puts( "ok" );
+// 				strtok( buf, "\n" );
+// 				strcpy( buf_cp, buf );
+// 			}
+// 			nl_count++;
+// 			//strcat( ptr_img_full, buf_cp );
+// 		}
+// 		printf( "  IMG ENDS %d LINE(S) UNDER AT: %s", nl_count, ptr_img_end );
+// 		printf( "    FULL: %s", buf_cp );
+// 	}
+// }
+	return EXIT_SUCCESS;
+}
+
+void
+infile_open( const char *pathname )
+{
+	if (access( pathname, F_OK ) == -1) {
+		err_print ( strerror(errno), pathname ); exit( errno );
 	}
 
-	FILE *infile;
- 	infile = fopen( pathname, "r+" );
-	if (! infile) {
-		err_print( ERR_MSG_BAD_FILE, pathname ); exit( errno );
-	}
+	struct open_file_s infile;
+	infile.path = xmalloc( sizeof pathname );
+	strcpy( infile.path, pathname );
 
-	fclose( infile );
+ 	infile.fp = fopen( infile.path, "r+" );
+	if (! infile.fp) {
+		err_print( ERR_MSG_BAD_FILE, infile.path ); exit( errno );
+	}
+	infile_parse( infile );
+	//fclose implicitly flushes the buffer too
+	fclose( infile.fp );
 }
 
 int
@@ -201,7 +170,7 @@ main( int argc, char *argv[] )
 
 	if (count_infiles <= 0) 	{ err_print( ERR_MSG_NO_INPUT, "" ) ; }
 	while (count_infiles > 0) {
-		infile_parse( argv[optind] );
+		infile_open( argv[optind] );
 		optind++; count_infiles--;
 	}
 	//FILE *infile;
@@ -214,7 +183,7 @@ main( int argc, char *argv[] )
 	FILE *test_file1;
 	FILE *test_file2;
 
-	exit(1);
+	exit(0);
 
 	fprintf(stderr, "Opening files...\n");
 	test_file1 = fopen("./Tests/file1.txt", "r");

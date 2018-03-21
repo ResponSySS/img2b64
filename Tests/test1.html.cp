@@ -25,12 +25,7 @@
 </header>
 <p>Wow, look:</p>
 <p>
-Classic img: <img srcset="./test1.jpg 2x" src=" 
-		  
-		  ./test1.jpg "
-
-
-/></p>
+Classic img: <img src=" ./test1.jpg " /></p>
 
 Classic B64 img: <img src = "data:image/png;base64, iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==" /> <br/>
 
