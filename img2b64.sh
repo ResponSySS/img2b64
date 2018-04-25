@@ -5,7 +5,7 @@
 # 
 #   DESCRIPTION: base64, sed, sort, uniq
 #  REQUIREMENTS: ---
-#        AUTHOR: Sylvain S. (ResponSyS), mail@systemicresponse.com
+#        AUTHOR: Sylvain S. (ResponSyS), mail@sylsau.com
 #  ORGANIZATION: 
 #       CREATED: 11/28/2017 16:42
 #===============================================================================

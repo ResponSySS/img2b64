@@ -1,6 +1,6 @@
 img2b64 v0.8
 Usage: img2b64 [OPTION]... {FILE}
-Convert all images with base64 encoding.
+Encodes all images with base64.
 Changes <img> tags of HTML file 'FILE' with their base64 strings and print result
 to standard output.
 

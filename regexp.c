@@ -5,7 +5,7 @@
  *        Created:  03/17/2018 05:15:05 PM
  *       Compiler:  gcc
  *
- *         Author:  Sylvain S. (ResponSyS), mail@systemicresponse.com
+ *         Author:  Sylvain S. (ResponSyS), mail@sylsau.com
  * =====================================================================================
  */
 
@@ -31,28 +31,28 @@ regex_extract_src( const char * str )
 	char *src = NULL;
 	int reti = 0;
 	regex_t preg;
-	//[0] matchs the whole regex, [1] is first match, etc.
+	// [0] matchs the whole regex, [1] is first match, etc.
 	regmatch_t pm[2];
-	char *err_buf = malloc( sizeof(char) * SIZE_ERR_BUFF );
+	char *err_buf = malloc( SIZE_ERR_BUFF ); // sizeof(char) is, by definition, always 1
 
-	printf( "STRING:\n\t%s\nREGEX:\n\t%s\n", str, RE_PATTERN );
+	dprintf( "STRING:\n\t%s\nREGEX:\n\t%s\n", str, RE_PATTERN );
 	return NULL;
 	// Doing da regex things
 	reti = regcomp( &preg, RE_PATTERN, REG_ICASE | REG_EXTENDED );
-	if (reti != 0) {
+	if (reti) {
 		regerror( reti, &preg, err_buf, SIZE_ERR_BUFF );
 		printf( "ERROR: %s\n", err_buf );
 		return NULL;
 	}
 	reti = regexec( &preg, str, 2, pm, 0 );
-	if (reti != 0) {
+	if (reti) {
 		regerror( reti, &preg, err_buf, SIZE_ERR_BUFF );
 		printf( "ERROR: %s\n", err_buf );
 		return NULL;
 	}
 
-	// Printinf matches
-	{
+	// Printing matches
+	if (DEBUG) {
 		int i = 0;
 		while (i < (sizeof pm / sizeof(regmatch_t))) {
 			printf( "[%d]rm_so == %d\n[%d]rm_eo == %d\n",
@@ -63,9 +63,7 @@ regex_extract_src( const char * str )
 		}
 	}
 
-	// No need freeing for stack vars
-	//regfree( &preg );
 	puts( "SUCCESS!" );
-	//TODO: fill it before!
+	// TODO: fill it before!
 	return src;
 }

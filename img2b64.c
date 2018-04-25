@@ -3,9 +3,13 @@
  *        Created:  12/06/2017 09:30:51 PM
  *       Compiler:  gcc
  *
- *         Author:  Sylvain S. (ResponSyS), mail@systemicresponse.com
+ *         Author:  Sylvain S. (ResponSyS), mail@sylsau.com
  * =====================================================================================
  */
+
+#define _GNU_SOURCE // needed by strcasestr
+
+#include "img2b64.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,13 +23,15 @@
 #include <stdbool.h>
 #include <sys/stat.h>
 
-#include "img2b64.h"
 
+bool quiet              = false;
+bool in_place           = false;
+char *in_place_suffix   = NULL;
 
 int
 infile_parse( struct open_file_s infile )
 {
-	printf( "=== READING '%s'\n", infile.path );
+	dprintf( "READING '%s'\n", infile.path );
 	char buf[SIZE_FREAD_BUFF];
 	char buf_cp[SIZE_FREAD_BUFF];
 	char *ptr_img_start = NULL;
@@ -34,22 +40,22 @@ infile_parse( struct open_file_s infile )
 	char *src = NULL;
 //	while (fread( buf, sizeof(char), SIZE_FREAD_BUFF, infile.fp )) {
 // 		printf( "-%s", buf);
-// 		//looking for '<'
+// 		// looking for '<'
 // 		char *ptr_img_start = strchr( buf, '<' );
 // 		printf( "this must be '<': ...%c%c%c...", *(ptr_img_start-1), *(ptr_img_start), *(ptr_img_start+1) );
-// 		//retrieves next 3 chars
-// 		//ensure no EOF, nor end of buf
-// 		//if == "img", then go to next step
+// 		// retrieves next 3 chars
+// 		// ensure no EOF, nor end of buf
+// 		// if == "img", then go to next step
 // 	}
 
-	while ((fread( buf, sizeof(char), SIZE_FREAD_BUFF, infile.fp )) != NULL) {
+	while ((fread( buf, sizeof(char), SIZE_FREAD_BUFF, infile.fp )) != (size_t)0) {
 	 	if ((ptr_img_start = strcasestr( buf, "<img" )) != NULL) {
-			printf( "IMG TAG STARTS AT: %.10s\n", ptr_img_start );
+			dprintf( "IMG TAG STARTS AT: %.10s\n", ptr_img_start );
 			if ((ptr_img_end = strcasestr( ptr_img_start, "/>" )) != NULL) {
-				printf( " IMG ENDS AT: %.10s", ptr_img_end );
+				dprintf( " IMG ENDS AT: %.10s", ptr_img_end );
 
 				ssize_t char_count = ptr_img_end - ptr_img_start;
-				//+ 1 for null byte at the end
+				// + 1 for null byte at the end
 				img_tag_full = xmalloc( sizeof(char) * (char_count + 1));
 				strncpy( img_tag_full, ptr_img_start, char_count );
 				img_tag_full[char_count] = '\0';
@@ -59,35 +65,35 @@ infile_parse( struct open_file_s infile )
 				while ((nl = strchr( img_tag_full, '\n' )) != NULL) {
 					*nl = ' ';
 				}
-				printf( "  FULL is %ld long\n --- \n%s\n ---",
+				dprintf( "  FULL is %ld long\n --- \n%s\n ---",
 					char_count, img_tag_full );
 				src = regex_extract_src( img_tag_full );
 				free( img_tag_full );
 			}
 		}
 	// 	if (feof( infile.fp ) != 0) {
-	//		//EOF reached
+	//		// EOF reached
 	//		puts( "EOF reached: bye!" );
 	//		return EXIT_SUCCESS;
 	// 	}
 	}
 // while (fgets( buf, SIZE_FREAD_BUFF, infile.fp ) != NULL) {
-// 	//looking for '<img'
+// 	// looking for '<img'
 //  	if ((ptr_img_start = strcasestr( buf, "<img" )) != NULL) {
 // 		ptr_img_full = ptr_img_start;
 // 		printf( "IMG TAG STARTS AT: %s", ptr_img_start );
-// 		//looking for 'src'
+// 		// looking for 'src'
 // 		int nl_count = 0;
 // 		while ((ptr_img_end = strcasestr( buf, "/>" )) == NULL) {
 // 			fgets( buf, SIZE_FREAD_BUFF, infile.fp );
-// 			//ensure buf is not empty for strtok
+// 			// ensure buf is not empty for strtok
 // 			if (buf[0] != '\0') {
 // 				puts( "ok" );
 // 				strtok( buf, "\n" );
 // 				strcpy( buf_cp, buf );
 // 			}
 // 			nl_count++;
-// 			//strcat( ptr_img_full, buf_cp );
+// 			// strcat( ptr_img_full, buf_cp );
 // 		}
 // 		printf( "  IMG ENDS %d LINE(S) UNDER AT: %s", nl_count, ptr_img_end );
 // 		printf( "    FULL: %s", buf_cp );
@@ -112,7 +118,7 @@ infile_open( const char *pathname )
 		err_print( ERR_MSG_BAD_FILE, infile.path ); exit( errno );
 	}
 	infile_parse( infile );
-	//fclose implicitly flushes the buffer too
+	// fclose implicitly flushes the buffer too
 	fclose( infile.fp );
 }
 
@@ -134,12 +140,12 @@ main( int argc, char *argv[] )
 //	err_print( ERR_MSG_BAD_ARG, "--fuck-you" );
 //	err_print( ERR_MSG_BAD_FILE, "./myfile.tits" );
 	
-	//TODO: crash unexpectedly when invalid option string (like "--hekeko")
+	// TODO: crash unexpectedly when invalid option string (like "--hekeko")
 	while ((opt = getopt_long( argc, argv, SHORTOPTS, longopts, NULL )) != EOF) {
 		switch (opt) {
 			case 'i':
 				in_place = true;
-				//Checking backup suffix
+				// Checking backup suffix
 				if (optarg != NULL) {
 					in_place_suffix = xmalloc( strlen(optarg) * sizeof(char) );
 					strcpy( in_place_suffix, optarg );
@@ -150,14 +156,16 @@ main( int argc, char *argv[] )
 				break;
 			case 'h':
 				usage( EXIT_SUCCESS );
+                break;
 			case 'n':
 				quiet = true;
 				break;
 			case 'v':
 				version_print();
 				exit( EXIT_SUCCESS );
+                break;
 			default:
-				//TODO: not working?
+				// TODO: not working?
 				usage( EXIT_FAILURE );
 				break;
 		}				/* -----  end switch  ----- */
@@ -173,13 +181,13 @@ main( int argc, char *argv[] )
 		infile_open( argv[optind] );
 		optind++; count_infiles--;
 	}
-	//FILE *infile;
+	// FILE *infile;
 	//
-	//arg parsing
+	// arg parsing
 	// record all infiles to an array
 
 
-	//regex_t re;
+	// regex_t re;
 	FILE *test_file1;
 	FILE *test_file2;
 

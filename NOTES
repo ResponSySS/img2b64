@@ -1,27 +1,24 @@
-Requirements:
+PREREQUISITES
+
 * the <img> tags must be properly formatted, with one 'src' paramater on the same line as the start of the tag and a file extension in the 'src' parameter
 
-* Must avoid changing <img> tags which are already base64 img
-	# identify src parameter
-	for SRC in $SRC_LIST; do
-		if [[ -f $SRC ]]; then
-			$NEW_SRC_LIST="$NEW_SRC_LIST $SRC"
-		else # SRC is not a file
-			$NEW_SRC_LIST="$NEW_SRC_LIST -1"
-		fi
-	done
-	# ...
-	# process img files to base64
-	for SRC in $SRC_LIST; do
-		[[ $SRC -eq -1 ]] || # jump to next
+GENERAL FLOW
 
-* To avoid arguments too long in case a 'src' is base64, only fetch 100 first characters
+    parse arguments
+    if in-place editing disabled and quiet option enabled
+        exit
+    open input file
+    open output file
+    if you get next line
+        search and replace in the line
+        print line to output file
+    if in-place editing enabled
+        move output file to input file
+    if quiet option disabled
+        print to output file to output stream
 
-TODO: PASS TO C BECAUSE FUCK IT TOO HARD AND TECHNICAL FOR BASH
+SEARCH AND REPLACE ALGORITHM
 
-* fgets: fetch content of file line by line (stop at newline or EOF)
-
-ALGO
 1. reaches "<img"
 2. reaches "src\s*=\s*"
 3a. reaches the first quote
@@ -34,31 +31,27 @@ ALGO
 8. replaces SRC_PATH with B64_STR
 
 READING RESOURCES
-	* `cd` to the dir containing the HTML file before analyzing it or: `pwd`+ dirname of HTML file + pathname to resource
-	* find a way to make absolute pathes work ('--root' option to specify where the root is located)
+
+* `cd` to the dir containing the HTML file before analyzing it or: `pwd`+ dirname of HTML file + pathname to resource
+* find a way to make absolute pathes work ('--rootpath' option to specify where the root is located)
 
 MATCHING REGEX
-	^.*<img\s*src\s*=\s*['"]\([^"']\+\)['"].*$
-	.*src[[:blank:]]*=[[:blank:]]*["'][[:blank:]]*([^"']+)[[:blank:]]*["']
-									   ^ weakness here: should really be same as the first match of ['"]
 
-CORRECT SRC FOR B64 IMG
+Correct 'src' for b64 img:
 	src="\s*data:\s*image\s*/\s*(gif|jpeg|png|(x-)?bmp|x-icon)\s*[;\s*charset\s*=\s*utf-8\s*];\s*base64\s*,\s*{BASE64STRING}\s*"
 
-ERRORS
-	* Error codes: which ones to use: https://www.gnu.org/software/libc/manual/html_node/Error-Codes.html
-	ENOENT) FILE does not exist
-	EINVAL) FILE is not an HTML file
-	SIMPLY EMIT WARNINGS WHEN
-		* <img> src file was not found
-		* <img> src was already b64
-		* no <img> tags were changed at all (when exiting)
+Matching regex:
+    ^.*<img\s*src\s*=\s*['"]\([^"']\+\)['"].*$
+    .*src[[:blank:]]*=[[:blank:]]*["'][[:blank:]]*([^"']+)[[:blank:]]*["']
+                                                                      ^ weakness here: should really be same as the first match of ['"]
 
-TODO
-	More examples in EXAMPLES
-	Can only takes one input FILE? Or do we allow for multiple input files? If we do, is it hard to implement?
-	Works on multiple <img> tags per line?
-	Works on badly formatted <img> tags?
-	Use libb64 right?
-	Use gnulib or libiberty??
-		gnulib requires autotools and so that's a fucking nope
+ERRORS
+Error codes: which ones to use: https://www.gnu.org/software/libc/manual/html_node/Error-Codes.html
+
+* ENOENT) FILE does not exist
+* EINVAL) FILE is not an HTML file
+
+Simply emit warnings when:
+* <img> src file was not found
+* <img> src was already b64
+* no <img> tags were changed at all (when exiting)

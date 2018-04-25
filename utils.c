@@ -5,9 +5,14 @@
  *        Created:  03/17/2018 05:24:27 PM
  *       Compiler:  gcc
  *
- *         Author:  Sylvain S. (ResponSyS), mail@systemicresponse.com
+ *         Author:  Sylvain S. (ResponSyS), mail@sylsau.com
  * =====================================================================================
  */
+
+#define _GNU_SOURCE // needed by asprintf
+
+#include "utils.h"
+#include "img2b64.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,16 +26,16 @@
 #include <stdbool.h>
 #include <sys/stat.h>
 
-#include "img2b64.h"
-#include "utils.h"
 
-
+// TODO: improve this with _va_args list instead of 'opt' arg to support various formatting
+// Print standard-formatted error message
 void
 err_print( const char *err_str, const char *opt )
 {
 	fprintf( stderr, "%s: %s%s%s\n", PROGRAM_NAME, err_str, *opt ? ": " : "", opt );
 }
 
+// Print xmalloc failure message
 void
 xmalloc_failed( size_t size )
 {
@@ -41,6 +46,7 @@ xmalloc_failed( size_t size )
 	exit( EXIT_FAILURE );
 }
 
+// Memory allocator with checking
 void *
 xmalloc( size_t size )
 {
@@ -53,15 +59,19 @@ xmalloc( size_t size )
 	return (newmem);
 }
 
+// Print version
+// @PROGRAM_NAME    string macro for program name
+// @VERSION         string macro for version
 void
 version_print( void )
 {
 	fprintf( stdout, "%s v%s\n\
 Written by Sylvain Saubier (<http://SystemicResponse.com>)\n\
-Report bugs to: <feedback@systemicresponse.com>\n", 
+Report bugs to: <feedback@sylsau.com>\n", 
 		PROGRAM_NAME, VERSION);
 }
 
+// Print usage/help message
 noreturn void
 usage( int status )
 {
@@ -70,7 +80,7 @@ usage( int status )
 	fprintf(out, "%s v%s\nUsage: %s [OPTION]... {FILE}\n",
 		PROGRAM_NAME, VERSION, PROGRAM_NAME);
 	fputs("\
-Convert all images with base64 encoding.\n\
+Encodes all images with base64.\n\
 Changes <img> tags of HTML file 'FILE' with their base64 strings and print result\n\
 to standard output.\n\n\
 OPTIONS\n\
@@ -89,27 +99,31 @@ CONTACT\n\
     Written by Sylvain Saubier (<http://SystemicResponse.com>)\n", out);
 	if (status)
 		fputs("\
-    Report bugs to: <feedback@systemicresponse.com>\n", out);
+    Report bugs to: <feedback@sylsau.com>\n", out);
 
 	exit(status);
 }
 
+// TODO: redo that with opt_s struct
+// TODO: redo that with _va_args to support various options organization by various programs
+// Print options
 void
 opt_print( const int argc, char *argv[] )
 {
 	puts( "---" );
 	printf( "optind==%d; argc==%d\n", optind, argc);
 	printf( "argv==\"");
-	int i = 0;
-	while (i < argc) {
-		printf( "%s\t", argv[i] );
-		i++;
-	}
+    {
+        int i;
+        for (i=0 ; i < argc ; i++) {
+            printf( "%s\t", argv[i] );
+	    }
+    }
 	printf( "\"\n");
 	printf( "QUIET is %sSET\n", quiet ? "" : "UN" );
 	printf( "SUFFIX is %s\n", in_place_suffix );
-	printf( "FILE COUNT is %d\n", argc-optind );
+	printf( "FILE COUNT is %d\n", argc - optind );
 	puts( "---" );
-	//be sure to flush stdout before resuming so it doesn't mix up things
-	fflush( stdout );
+	
+	fflush( stdout ); // Flush stdout before resuming so it doesn't mix up things
 }

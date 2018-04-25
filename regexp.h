@@ -3,7 +3,7 @@
  *        Created:  03/17/2018 05:51:07 PM
  *       Compiler:  gcc
  *
- *         Author:  Sylvain S. (ResponSyS), mail@systemicresponse.com
+ *         Author:  Sylvain S. (ResponSyS), mail@sylsau.com
  * =====================================================================================
  */
 
