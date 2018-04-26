@@ -126,67 +126,73 @@ infile_open( const char *pathname )
 int
 main( int argc, char *argv[] )
 {
-	int gopt;
-	static const struct option longopts[] = {
-		{ "in-place",   2, NULL, 'i' },
-		{ "quiet",      0, NULL, 'n' },
-		{ "help",       0, NULL, 'h' },
-		{ "version",    0, NULL, 'v' },
-		{ NULL,         0, NULL,  0  }  // needed for marking the end of longopts,
-                                        // otherwise getopt_long() illegally
-                                        // reads memory beyond the end of longopts
-	};
-
 	int count_infiles = 0;
 
-	if (argc < 2) 	{ err_print( ERR_MSG_NO_INPUT, NULL ); usage(127); }
-//	err_print( ERR_MSG_NO_INPUT, "" );
+	if (argc < 2) {
+        goto GTNoInput;
+    }
+//	err_print( ERR_MSG_NO_INPUT, NULL );
 //	err_print( ERR_MSG_BAD_ARG, "--fuck-you" );
 //	err_print( ERR_MSG_BAD_FILE, "./myfile.tits" );
-	
-	// TODO: crash unexpectedly when invalid option string (like "--hekeko")
-	while ((gopt = getopt_long( argc, argv, SHORTOPTS, longopts, NULL )) != EOF) {
-		switch (gopt) {
-			case 'i':
-                opt.opt |= OPT_INPLACE;
-				// Checking backup suffix
-				if (optarg != NULL) {
-					opt.in_place_suffix = xmalloc( strlen(optarg) ); // sizeof(char) is always 1
-					strcpy( opt.in_place_suffix, optarg );
-                    DEBUG_PRINTF( "in-place option enabled, suffix set\n" );
-				}
-				else {
-                    DEBUG_PRINTF( "in-place option enabled, no suffix set\n" );
-				}
-				break;
-			case 'h':
-				usage( EXIT_SUCCESS );
-                break;
-			case 'n':
-                opt.opt |= OPT_QUIET;
-                DEBUG_PRINTF( "quiet option enabled\n" );
-				break;
-			case 'v':
-				print_version();
-				exit( EXIT_SUCCESS );
-                break;
-			default:
-				// TODO: not working?
-				usage( EXIT_FAILURE );
-				break;
-		}				/* -----  end switch  ----- */
-	}
-#ifdef DEBUG
-	opt_print(argc, argv);
-#endif
+    // Parse arguments
+    {
+        int gopt;
+        static const struct option longopts[] = {
+            { "in-place",   2, NULL, 'i' },
+            { "quiet",      0, NULL, 'n' },
+            { "help",       0, NULL, 'h' },
+            { "version",    0, NULL, 'v' },
+            { NULL,         0, NULL,  0  }  // needed for marking the end of longopts,
+                                            // otherwise getopt_long() illegally
+                                            // reads memory beyond the end of longopts
+        };
+        while ((gopt = getopt_long( argc, argv, SHORTOPTS, longopts, NULL )) != EOF) {
+        	switch (gopt) {
+        		case 'i':
+                    opt.opt |= OPT_INPLACE;
+        			// Checking backup suffix
+        			if (optarg != NULL) {
+        				opt.in_place_suffix = xmalloc( strlen(optarg) ); // sizeof(char) is always 1
+        				strcpy( opt.in_place_suffix, optarg );
+                        DEBUG_PRINTF( "in-place option enabled, suffix set\n" );
+        			}
+        			else {
+                        DEBUG_PRINTF( "in-place option enabled, no suffix set\n" );
+        			}
+        			break;
+        		case 'h':
+        			usage( EXIT_SUCCESS );
+                    break;
+        		case 'n':
+                    opt.opt |= OPT_QUIET;
+                    DEBUG_PRINTF( "quiet option enabled\n" );
+        			break;
+        		case 'v':
+        			print_version();
+        			exit( EXIT_SUCCESS );
+                    break;
+        		default:
+        			usage( EXIT_FAILURE );
+        			break;
+        	}				/* -----  end switch  ----- */
+        }
+        if (DEBUG)  opt_print(argc, argv);
+    }
 
-	count_infiles = argc - optind;
+    count_infiles = argc - optind;
 
-	if (count_infiles <= 0) 	{ err_print( ERR_MSG_NO_INPUT, "" ) ; }
-	while (count_infiles > 0) {
-		infile_open( argv[optind] );
-		optind++; count_infiles--;
-	}
+	if (count_infiles <= 0) {
+GTNoInput:
+        err_print( ERR_MSG_NO_INPUT, NULL ); exit( 127 );
+    }
+    else if (opt.opt & OPT_QUIET && ! (opt.opt & OPT_INPLACE)) {// quiet + no in-place edit
+        fputs( "No file to edit and no printing to stdout, so... nothing to be done!", stderr );
+        exit( EXIT_SUCCESS );
+    }
+    // Process files
+    for (; count_infiles > 0 ; optind++, count_infiles-- ) {
+        infile_open( argv[optind] );
+    }
 	// FILE *infile;
 	//
 	// arg parsing

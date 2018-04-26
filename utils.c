@@ -27,12 +27,12 @@
 #include <sys/stat.h>
 
 
-// TODO: improve this with _va_args list instead of 'opt' arg to support various formatting
 // Print standard-formatted error message
 void
 err_print( const char *err_str, const char *opt )
 {
-	fprintf( stderr, "%s: %s%s%s\n", "ERROR: " PROGRAM_NAME, err_str, ( *opt ? ": " : "" ), opt );
+	fprintf( stderr, (opt ? "%s%s: %s\n" : "%s%s\n"), "ERROR: " PROGRAM_NAME ": ", err_str, opt ); 
+    // From C Standard Draft: "If the format is exhausted while arguments remain, the excess arguments are evaluated (as always) but are otherwise ignored"
 }
 
 // Print xmalloc failure message

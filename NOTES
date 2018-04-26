@@ -17,6 +17,12 @@ GENERAL FLOW
     if quiet option disabled
         print to output file to output stream
 
+    SEARCH AND REPLACE FLOW
+        if <img> tag found
+            read string from 'src' element
+            process file with path from string
+            replace with new formatted base64 string
+
 SEARCH AND REPLACE ALGORITHM
 
 1. reaches "<img"
