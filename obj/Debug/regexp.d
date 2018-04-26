@@ -1,7 +1,5 @@
-obj/Debug/regexp.o: regexp.c regexp.h img2b64.h utils.h
+obj/Debug/regexp.o: regexp.c regexp.h img2b64.h
 
 regexp.h:
 
 img2b64.h:
-
-utils.h:

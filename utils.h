@@ -27,7 +27,7 @@ void *
 xmalloc( size_t size );
 
 void
-version_print( void );
+print_version( void );
 
 void
 usage( int status );

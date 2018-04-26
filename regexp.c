@@ -24,7 +24,15 @@
 #include <stdbool.h>
 #include <sys/stat.h>
 
+// Replace <img> string in given str
+// Returns number of replacements made
+int
+regex_replace( const char * str )
+{
+    return 0;
+}
 
+// TODO: What does it do????
 char *
 regex_extract_src( const char * str )
 {
@@ -35,7 +43,7 @@ regex_extract_src( const char * str )
 	regmatch_t pm[2];
 	char *err_buf = malloc( SIZE_ERR_BUFF ); // sizeof(char) is, by definition, always 1
 
-	dprintf( "STRING:\n\t%s\nREGEX:\n\t%s\n", str, RE_PATTERN );
+	DEBUG_PRINTF( "STRING:\n\t%s\nREGEX:\n\t%s\n", str, RE_PATTERN );
 	return NULL;
 	// Doing da regex things
 	reti = regcomp( &preg, RE_PATTERN, REG_ICASE | REG_EXTENDED );
@@ -63,7 +71,7 @@ regex_extract_src( const char * str )
 		}
 	}
 
-	puts( "SUCCESS!" );
+	DEBUG_PRINTF( "SUCCESS!" );
 	// TODO: fill it before!
 	return src;
 }

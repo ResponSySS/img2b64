@@ -32,11 +32,11 @@
 void
 err_print( const char *err_str, const char *opt )
 {
-	fprintf( stderr, "%s: %s%s%s\n", PROGRAM_NAME, err_str, *opt ? ": " : "", opt );
+	fprintf( stderr, "%s: %s%s%s\n", "ERROR: " PROGRAM_NAME, err_str, ( *opt ? ": " : "" ), opt );
 }
 
 // Print xmalloc failure message
-void
+noreturn void
 xmalloc_failed( size_t size )
 {
 	char *err_str;
@@ -63,7 +63,7 @@ xmalloc( size_t size )
 // @PROGRAM_NAME    string macro for program name
 // @VERSION         string macro for version
 void
-version_print( void )
+print_version( void )
 {
 	fprintf( stdout, "%s v%s\n\
 Written by Sylvain Saubier (<http://SystemicResponse.com>)\n\
@@ -120,9 +120,9 @@ opt_print( const int argc, char *argv[] )
 	    }
     }
 	printf( "\"\n");
-	printf( "QUIET is %sSET\n", quiet ? "" : "UN" );
-	printf( "SUFFIX is %s\n", in_place_suffix );
-	printf( "FILE COUNT is %d\n", argc - optind );
+	printf( "QUIET: [%sSET]\n", opt.opt & OPT_QUIET ? "" : "UN" );
+	printf( "SUFFIX: %s\n", opt.in_place_suffix );
+	printf( "FILE COUNT: %d\n", argc - optind );
 	puts( "---" );
 	
 	fflush( stdout ); // Flush stdout before resuming so it doesn't mix up things
