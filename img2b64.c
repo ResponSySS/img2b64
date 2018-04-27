@@ -26,57 +26,80 @@
 #include <sys/stat.h>
 
 
-struct opt_s opt        = { 00, NULL };
+struct opt_s opt = OPT_S_DEF;
 
-// TODO: What does it do????
-int
-infile_parse( struct open_file_s infile )
+// Open a file
+// Returns filled open file structure
+struct open_file_s
+file_open( const char *pathname, const char *mode )
 {
-	DEBUG_PRINTF( "READING '%s'\n", infile.path );
-	char buf[SIZE_FREAD_BUFF];
-	char buf_cp[SIZE_FREAD_BUFF];
+	struct open_file_s f = OPEN_FILE_S_DEF;
+	f.path = xmalloc( sizeof pathname );
+	strcpy( f.path, pathname );
+
+ 	f.fp = fopen( f.path, mode );
+	if (! f.fp) {
+		//err_print( ERR_MSG_BAD_FILE, f.path );
+		err_print( strerror(errno), pathname );
+        exit( errno );
+	}
+    return f;
+}
+
+// Close an open file
+// Returns 1 on success
+int
+file_close( struct open_file_s of )
+{
+	if (fclose( of.fp ) != 0) { // this implicitly flushes the buffer too
+		err_print( strerror(errno), of.path );
+        exit( errno );
+    }
+    return 1;
+}
+
+// TODO:    1) what if the buffer contains the start of <img> but not its end?
+//          2) what if it ends like "[...] <im"
+//          solution:
+//              1) if end of <img> not found, refetch from start of <img>
+//              2) always refetch next buffer 3 characters before end of previous buffer
+// Search and replace <img> tag with base64
+// Returns number of replacements made
+// @str         string to parse
+int
+parse_str( char * str )
+{
 	char *ptr_img_start = NULL;
 	char *ptr_img_end = NULL;
 	char *img_tag_full = NULL;
 	char *src = NULL;
-//	while (fread( buf, sizeof(char), SIZE_FREAD_BUFF, infile.fp )) {
-// 		printf( "-%s", buf);
-// 		// looking for '<'
-// 		char *ptr_img_start = strchr( buf, '<' );
-// 		printf( "this must be '<': ...%c%c%c...", *(ptr_img_start-1), *(ptr_img_start), *(ptr_img_start+1) );
-// 		// retrieves next 3 chars
-// 		// ensure no EOF, nor end of buf
-// 		// if == "img", then go to next step
-// 	}
+    //char sstr = str; // start of str
 
-	while ((fread( buf, sizeof(char), SIZE_FREAD_BUFF, infile.fp )) != (size_t)0) {
-	 	if ((ptr_img_start = strcasestr( buf, "<img" )) != NULL) {
-			DEBUG_PRINTF( "IMG TAG STARTS AT: %.10s\n", ptr_img_start );
-			if ((ptr_img_end = strcasestr( ptr_img_start, "/>" )) != NULL) {
-				DEBUG_PRINTF( " IMG ENDS AT: %.10s", ptr_img_end );
-
-				ssize_t char_count = ptr_img_end - ptr_img_start;
-				// + 1 for null byte at the end
-				img_tag_full = xmalloc( sizeof(char) * (char_count + 1));
-				strncpy( img_tag_full, ptr_img_start, char_count );
-				img_tag_full[char_count] = '\0';
-
-				// Removes newline characters inside <img> tag
-				char *nl = NULL;
-				while ((nl = strchr( img_tag_full, '\n' )) != NULL) {
-					*nl = ' ';
-				}
-				DEBUG_PRINTF( "  FULL is %ld long\n --- \n%s\n ---",
-					char_count, img_tag_full );
-				src = regex_extract_src( img_tag_full );
-				free( img_tag_full );
-			}
-		}
-	// 	if (feof( infile.fp ) != 0) {
-	//		// EOF reached
-	//		puts( "EOF reached: bye!" );
-	//		return EXIT_SUCCESS;
-	// 	}
+	for (; (ptr_img_start = strcasestr( str, "<img" )) != NULL ; str = ++ptr_img_start) {
+        DEBUG_PRINTF( "<img> start found\n" );
+		if ((ptr_img_end = strcasestr( ptr_img_start, "/>" )) != NULL) {
+            // Extract <img> tag from whole string
+            ssize_t cc = ptr_img_end - ptr_img_start; // char count
+            img_tag_full = xmalloc( cc + 1 ); // + 1 for null byte at the end
+            strncpy( img_tag_full, ptr_img_start, cc );
+            *(img_tag_full + cc) = '\0';
+			// Removes newline characters inside <img> tag
+            {
+                char *nl;
+                for ( nl = NULL ; (nl = strchr( img_tag_full, '\n' )) != NULL ; *nl=' ')
+                    ;
+            }
+			DEBUG_PRINTF( "  length: %ld\n", cc );
+            // Extract 'src' string parameter
+			src = regex_extract_src( img_tag_full );
+            // Process 'src' string
+            // b64_enc ( src );
+            DEBUG_PRINTF( "  extracted 'src': \"%s\"\n", src );
+            // Change original <img> tag
+			free( img_tag_full );
+		} else {
+            err_print( "incomplete <img> tag" , NULL );
+        }
 	}
 // while (fgets( buf, SIZE_FREAD_BUFF, infile.fp ) != NULL) {
 // 	// looking for '<img'
@@ -103,37 +126,43 @@ infile_parse( struct open_file_s infile )
 	return EXIT_SUCCESS;
 }
 
-// TODO: What does it do????
-void
-infile_open( const char *pathname )
+// Parse a file
+// Returns number of replacement made in file
+// @inf     input file
+// @outf    output
+int
+file_parse( const struct open_file_s inf, struct open_file_s outf )
 {
-	if (access( pathname, F_OK ) == -1) {
-		err_print ( strerror(errno), pathname ); exit( errno );
-	}
-
-	struct open_file_s infile;
-	infile.path = xmalloc( sizeof pathname );
-	strcpy( infile.path, pathname );
-
- 	infile.fp = fopen( infile.path, "r+" );
-	if (! infile.fp) {
-		err_print( ERR_MSG_BAD_FILE, infile.path ); exit( errno );
-	}
-	infile_parse( infile );
-	fclose( infile.fp ); // this implicitly flushes the buffer too
+	DEBUG_PRINTF( "Parsing '%s', printing to '%s'\n", inf.path, outf.path );
+    // get next str from file
+        // parse_str (str)
+        // print to outfile
+    int i = 0;
+    size_t read_size = 0;
+	char buf    [SIZE_FREAD_BUFF];
+	//char buf_res[SIZE_FREAD_BUFF];
+	while ( (read_size = (fread( buf, 1, SIZE_FREAD_BUFF, inf.fp ))) != 0) {
+        i += parse_str( buf );
+        fwrite( buf, 1, read_size, outf.fp );
+    }
+    // EOF or error?
+    if (feof( inf.fp )) { // EOF reached
+        DEBUG_PRINTF( "EOF reached!\n" );
+    } else if (ferror( inf.fp )) { // error
+        err_print( "error processing file stream", NULL );
+    }
+    DEBUG_PRINTF( "Made %d replacements\n", i );
+    return i;
 }
+
 
 int
 main( int argc, char *argv[] )
 {
 	int count_infiles = 0;
 
-	if (argc < 2) {
-        goto GTNoInput;
-    }
-//	err_print( ERR_MSG_NO_INPUT, NULL );
-//	err_print( ERR_MSG_BAD_ARG, "--fuck-you" );
-//	err_print( ERR_MSG_BAD_FILE, "./myfile.tits" );
+	if (argc < 2)   goto GTNoInput;
+
     // Parse arguments
     {
         int gopt;
@@ -176,23 +205,25 @@ main( int argc, char *argv[] )
         			break;
         	}				/* -----  end switch  ----- */
         }
-        if (DEBUG)  opt_print(argc, argv);
+        if (DEBUG)      opt_print(argc, argv);
     }
 
-    count_infiles = argc - optind;
-
-	if (count_infiles <= 0) {
-GTNoInput:
-        err_print( ERR_MSG_NO_INPUT, NULL ); exit( 127 );
+	if ((count_infiles = argc - optind) <= 0) {
+        goto GTNoInput;
     }
-    else if (opt.opt & OPT_QUIET && ! (opt.opt & OPT_INPLACE)) {// quiet + no in-place edit
+    else if (opt.opt & OPT_QUIET && ! (opt.opt & OPT_INPLACE)) {
         fputs( "No file to edit and no printing to stdout, so... nothing to be done!", stderr );
         exit( EXIT_SUCCESS );
     }
     // Process files
     for (; count_infiles > 0 ; optind++, count_infiles-- ) {
-        infile_open( argv[optind] );
+        struct open_file_s inf  = file_open( argv[optind], "r" );
+        struct open_file_s outf = file_open( OUTFILE_PATH, "w" );
+        file_parse( inf, outf );
+        file_close( inf );
+        file_close( outf );
     }
+    exit( EXIT_SUCCESS );
 	// FILE *infile;
 	//
 	// arg parsing
@@ -217,4 +248,7 @@ GTNoInput:
 	fclose(test_file2);
 
 	return EXIT_SUCCESS;
+GTNoInput:
+    err_print( ERR_MSG_NO_INPUT, NULL );
+    exit( 127 );
 }				/* ----------  end of main  ---------- */

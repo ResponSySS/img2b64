@@ -12,6 +12,7 @@
 
 
 #define SIZE_ERR_BUFF 	100
+// Match 1 is 'src' parameter
 #define RE_PATTERN 	".*src[[:blank:]]*=[[:blank:]]*['\"][[:blank:]]*([^'\"]+)[[:blank:]]*['\"].*"
 
 char *

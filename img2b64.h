@@ -24,7 +24,9 @@
 #endif
 
 #define DEBUG_PRINTF(...) \
-    do { if (DEBUG) { fprintf( stderr, "[DEBUG] " __VA_ARGS__ ); } } while (0)
+    do { if (DEBUG)     fprintf( stderr, "[DEBUG] " __VA_ARGS__ ); } while (0)
+#define DEBUG_WHERE \
+    do { if (DEBUG)     fprintf( stderr, "[DEBUG] %s:%s:%s", __file__, __line__, __func__ ); } while (0)
 
 // GLOBALS
 #define PROGRAM_NAME        "img2b64"
@@ -37,7 +39,7 @@
 #define ERR_MSG_NO_FILE 	"file does not exist" 	// y
 #define ERR_MSG_BAD_FILE 	"can't open file" 		// y
 
-#define SIZE_FREAD_BUFF 	8192
+#define SIZE_FREAD_BUFF 	8192 // arbitrary (?) value taken from sed 'execute.c'
 
 // OPTIONS
 // TODO: needs a common struct for all options.
@@ -50,17 +52,16 @@ struct opt_s {
     char *in_place_suffix;
 };
 extern struct opt_s opt;
+#define OPT_S_DEF           { 00, NULL }
 
+// FILES
 struct open_file_s {
 	FILE *fp;
 	char *path;
 };
+#define OPEN_FILE_S_DEF     { NULL, NULL }
 
-//int
-//infile_parse( struct open_file_s infile );
-
-//void
-//infile_open( const char *pathname );
+#define OUTFILE_PATH        "/tmp/img2b64.out"
 
 
 #endif
