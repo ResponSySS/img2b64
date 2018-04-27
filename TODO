@@ -1,3 +1,7 @@
+Functions should NOT RETURN AN ALLOCATED STRING, either:
+    1) stack allocate in the func the return it (variable erased on every call)
+    2) use `func(src, dest, size)` style
+    
 Finish it by debugging with valgrind
 More examples in EXAMPLES
 Can only takes one input FILE? Or do we allow for multiple input files? If we do, is it hard to implement?

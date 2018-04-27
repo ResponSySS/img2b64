@@ -23,9 +23,10 @@
 #define DEBUG 0
 #endif
 
+// TODO: invalid memory read caused by this (probably bad handling of VA_ARGS
 #define DEBUG_PRINTF(...) \
     do { if (DEBUG)     fprintf( stderr, "[DEBUG] " __VA_ARGS__ ); } while (0)
-#define DEBUG_WHERE \
+#define DEBUG_WHERE() \
     do { if (DEBUG)     fprintf( stderr, "[DEBUG] %s:%s:%s", __file__, __line__, __func__ ); } while (0)
 
 // GLOBALS
@@ -38,6 +39,7 @@
 #define ERR_MSG_BAD_ARG 	"unknown argument" 		// y
 #define ERR_MSG_NO_FILE 	"file does not exist" 	// y
 #define ERR_MSG_BAD_FILE 	"can't open file" 		// y
+#define ERR_MSG_FILE_STREAM "error processing file stream" // y
 
 #define SIZE_FREAD_BUFF 	8192 // arbitrary (?) value taken from sed 'execute.c'
 

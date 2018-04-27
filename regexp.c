@@ -35,42 +35,41 @@ regex_replace( const char * str )
 
 // Extract 'src' parameter from <img> tag in string
 // Returns 'src' string
-char *
-regex_extract_src( const char * s_img )
+int
+extract_src( char src[], const char * img, ssize_t maxlen )
 {
-	char *s_src = NULL;
 	int reti = 0;
 	regex_t preg;
 	// [0] matchs the whole regex, [1] is first match, etc.
 	regmatch_t pm[2];
-	char *err_buf = xmalloc( SIZE_ERR_BUFF ); // sizeof(char) is, by definition, always 1
+	char err_buf [SIZE_ERR_BUFF];
 
-	DEBUG_PRINTF( "  <img>: {%s}\n", s_img );
-	// Doing da regex things
+	// Compile RE pattern
 	reti = regcomp( &preg, RE_PATTERN, REG_ICASE | REG_EXTENDED );
 	if (reti) {
 		regerror( reti, &preg, err_buf, SIZE_ERR_BUFF );
-		printf( "ERROR: %s\n", err_buf );
-		return NULL;
+		err_print( "Can't compile regex pattern", err_buf );
+		return 0;
 	}
-	reti = regexec( &preg, s_img, 2, pm, 0 );
+    // Find RE pattern
+	reti = regexec( &preg, img, 2, pm, 0 );
 	if (reti) {
 		regerror( reti, &preg, err_buf, SIZE_ERR_BUFF );
-		printf( "ERROR: %s\n", err_buf );
-		return NULL;
+		err_print( "Can't execute regex pattern", err_buf );
+		return 0;
 	}
-    size_t size_src = pm[1].rm_eo - pm[1].rm_so;
-
 	// Printing matches
 	if (DEBUG) {
 		int i;
 		for ( i=0 ; i < (sizeof pm / sizeof(regmatch_t)) ; i++) {
-            DEBUG_PRINTF( "    match %d [%d-%d]: {%.*s}\n", i, pm[i].rm_so, pm[i].rm_eo,
-                (int) size_src, s_img + pm[i].rm_so );
+            DEBUG_PRINTF( "    match %s [%d-%d]: {%.*s}\n", i ? "1 ('src')" : "0 (<img>)",
+                    pm[i].rm_so, pm[i].rm_eo,
+                (int) pm[i].rm_eo - pm[i].rm_so, img + pm[i].rm_so );
 		}
 	}
-    s_src = xmalloc( size_src + 1 ); // +1 for null byte
-    strncpy( s_src, s_img + pm[1].rm_so, size_src );
-    *(s_src + size_src) = '\0';
-	return s_src;
+
+    size_t len = pm[1].rm_eo - pm[1].rm_so + 1; // + 1 for terminating null byte
+    strncpy( src, img + pm[1].rm_so, len - 1 );
+    src[len-1] = '\0';
+	return 1;
 }

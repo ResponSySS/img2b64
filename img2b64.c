@@ -34,7 +34,7 @@ struct open_file_s
 file_open( const char *pathname, const char *mode )
 {
 	struct open_file_s f = OPEN_FILE_S_DEF;
-	f.path = xmalloc( sizeof pathname );
+	f.path = xmalloc( sizeof(pathname) );
 	strcpy( f.path, pathname );
 
  	f.fp = fopen( f.path, mode );
@@ -58,6 +58,36 @@ file_close( struct open_file_s of )
     return 1;
 }
 
+//
+// Extract substring from string with start and end offsets
+// @str     string to fill
+// @off     array of start offset ([0]) and end offset ([1])
+int
+extract_img( char str[], const char *off[2], ssize_t maxlen )
+{
+    ssize_t len = off[1] - off[0] + 1; // +1 for terminating null byte
+    if (len > maxlen) {
+        DEBUG_PRINTF( "%s:%d: substring {%10s} too big to be extracted from {%s}", __FILE__, __LINE__, off[0], str );
+        return 0;
+    }
+    strncpy( str, off[0], len - 1 );
+    str[len-1] = '\0';
+    return 1;
+}
+
+// Removes newline characters inside string
+// Returns number of newlines 
+int
+strip_nl ( char * str )
+{
+    int i;
+    char *nl;
+    for ( i = 0, nl = NULL ; (nl = strchr( str, '\n' )) != NULL ; *nl=' ', i++)
+        ;
+    return i;
+}
+
+// TODO: divide this in tinier function
 // TODO:    1) what if the buffer contains the start of <img> but not its end?
 //          2) what if it ends like "[...] <im"
 //          solution:
@@ -67,38 +97,30 @@ file_close( struct open_file_s of )
 // Returns number of replacements made
 // @str         string to parse
 int
-parse_str( char * str )
+parse_str( const char * str )
 {
-	char *ptr_img_start = NULL;
-	char *ptr_img_end = NULL;
-	char *img_tag_full = NULL;
-	char *src = NULL;
-    //char sstr = str; // start of str
+    char *img_off[2]; // [0]: start offset, [1]: end offset
+    int i; // Number of matches
 
-	for (; (ptr_img_start = strcasestr( str, "<img" )) != NULL ; str = ++ptr_img_start) {
-        DEBUG_PRINTF( "<img> start found\n" );
-		if ((ptr_img_end = strcasestr( ptr_img_start, "/>" )) != NULL) {
+    // Find start offset and end offset of <img> in str
+	for (i = 0; (img_off[0] = strcasestr( str, "<img" )) != NULL ;
+            str = ++(img_off[0]), i++) {
+	    if ((img_off[1] = strcasestr( img_off[0], "/>" )) != NULL) {
+            DEBUG_PRINTF( "<img> #%d:\n", i );
+            char img_full [SIZE_FREAD_BUFF];
+            char src [SIZE_FREAD_BUFF];
             // Extract <img> tag from whole string
-            ssize_t cc = ptr_img_end - ptr_img_start; // char count
-            img_tag_full = xmalloc( cc + 1 ); // + 1 for null byte at the end
-            strncpy( img_tag_full, ptr_img_start, cc );
-            *(img_tag_full + cc) = '\0';
-			// Removes newline characters inside <img> tag
-            {
-                char *nl;
-                for ( nl = NULL ; (nl = strchr( img_tag_full, '\n' )) != NULL ; *nl=' ')
-                    ;
-            }
-			DEBUG_PRINTF( "  length: %ld\n", cc );
-            // Extract 'src' string parameter
-			src = regex_extract_src( img_tag_full );
+            extract_img( img_full, (const char **)img_off, SIZE_FREAD_BUFF );
+            // Strip newlines
+            int j = strip_nl( img_full );
+            DEBUG_PRINTF( "  %d newlines stripped\n", j );
+            // Extract 'src' parameter
+	    	extract_src( src, img_full, SIZE_FREAD_BUFF );
             // Process 'src' string
             // b64_enc ( src );
-            DEBUG_PRINTF( "  extracted 'src': \"%s\"\n", src );
             // Change original <img> tag
-			free( img_tag_full );
-		} else {
-            err_print( "incomplete <img> tag" , NULL );
+	    } else {
+            err_print( "Incomplete <img> tag" , NULL );
         }
 	}
 // while (fgets( buf, SIZE_FREAD_BUFF, infile.fp ) != NULL) {
@@ -123,7 +145,7 @@ parse_str( char * str )
 // 		printf( "    FULL: %s", buf_cp );
 // 	}
 // }
-	return EXIT_SUCCESS;
+	return i;
 }
 
 // Parse a file
@@ -131,27 +153,32 @@ parse_str( char * str )
 // @inf     input file
 // @outf    output
 int
-file_parse( const struct open_file_s inf, struct open_file_s outf )
+file_parse_print( const struct open_file_s inf, struct open_file_s outf )
 {
-	DEBUG_PRINTF( "Parsing '%s', printing to '%s'\n", inf.path, outf.path );
-    // get next str from file
-        // parse_str (str)
-        // print to outfile
     int i = 0;
     size_t read_size = 0;
-	char buf    [SIZE_FREAD_BUFF];
-	//char buf_res[SIZE_FREAD_BUFF];
-	while ( (read_size = (fread( buf, 1, SIZE_FREAD_BUFF, inf.fp ))) != 0) {
+    // TODO: Why turning this to an array causes 3 times more valgrind errors??
+    char * buf = xmalloc( SIZE_FREAD_BUFF );
+
+    // TODO: valgrind errors here
+    DEBUG_PRINTF( "Parsing '%s', printing to '%s'\n", inf.path, outf.path );
+    // TODO: valgrind errors here
+    // get next string from file
+    while ( (read_size = fread( buf, 1, SIZE_FREAD_BUFF, inf.fp )) != 0) {
+        // TODO: valgrind errors here
+        // parse string
         i += parse_str( buf );
+        // print to outfile
         fwrite( buf, 1, read_size, outf.fp );
     }
     // EOF or error?
-    if (feof( inf.fp )) { // EOF reached
-        DEBUG_PRINTF( "EOF reached!\n" );
-    } else if (ferror( inf.fp )) { // error
-        err_print( "error processing file stream", NULL );
+    if (feof( inf.fp )) {
+        fprintf( stderr, "%s: made %d replacements\n", inf.path, i );
+    } else if (ferror( inf.fp )) {
+        err_print( ERR_MSG_FILE_STREAM, NULL );
+        exit( EBADF );
     }
-    DEBUG_PRINTF( "Made %d replacements\n", i );
+    free( buf );
     return i;
 }
 
@@ -219,7 +246,7 @@ main( int argc, char *argv[] )
     for (; count_infiles > 0 ; optind++, count_infiles-- ) {
         struct open_file_s inf  = file_open( argv[optind], "r" );
         struct open_file_s outf = file_open( OUTFILE_PATH, "w" );
-        file_parse( inf, outf );
+        file_parse_print( inf, outf );
         file_close( inf );
         file_close( outf );
     }

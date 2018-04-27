@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 
 
+// TODO: remake it with va_args seriously wth is that bro
 // Print standard-formatted error message
 void
 err_print( const char *err_str, const char *opt )

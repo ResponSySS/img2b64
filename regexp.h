@@ -11,12 +11,15 @@
 #define _REGEXP_H
 
 
+#include <stdio.h>
+
+
 #define SIZE_ERR_BUFF 	100
 // Match 1 is 'src' parameter
 #define RE_PATTERN 	".*src[[:blank:]]*=[[:blank:]]*['\"][[:blank:]]*([^'\"]+)[[:blank:]]*['\"].*"
 
-char *
-regex_extract_src( const char * str );
+int
+extract_src( char src[], const char * img, ssize_t len );
 
 
 #endif
