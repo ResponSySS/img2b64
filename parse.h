@@ -7,8 +7,8 @@
  * =====================================================================================
  */
 
-#ifndef _REGEXP_H
-#define _REGEXP_H
+#ifndef _PARSE_H
+#define _PARSE_H
 
 
 #include <stdio.h>
@@ -19,7 +19,15 @@
 #define RE_PATTERN 	".*src[[:blank:]]*=[[:blank:]]*['\"][[:blank:]]*([^'\"]+)[[:blank:]]*['\"].*"
 
 int
-extract_src( char src[], const char * img, ssize_t len );
+strip_nl ( char * str );
 
+int
+extract_substr( char str[], const char *off[2], size_t maxlen );
+
+int
+extract_src( char src[], const char * img, size_t maxlen );
+
+int
+process_buf( char * buf );
 
 #endif

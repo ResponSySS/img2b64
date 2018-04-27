@@ -12,6 +12,7 @@
 #ifndef _IMG2B64_H
 #define _IMG2B64_H
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>

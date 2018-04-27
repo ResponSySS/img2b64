@@ -6,7 +6,8 @@ project "img2b64"
     language "C"
     targetdir "./bin"
 -- links { "" }
-    buildoptions { "-Wall" }
+    buildoptions { "-Wall -Iinc/" }
+    links { "b64" }
     
     files { "**.h", "**.c" }
     
