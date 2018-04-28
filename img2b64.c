@@ -26,6 +26,52 @@
 
 struct opt_s opt = OPT_S_DEF;
 
+// Search for nth or last char in string
+// @str string to search
+// @c   char to search for
+// @n   if negative, returns last occurence of char, otherwise return nth
+// Returns pointer to char position
+char *
+where_char( char * str, const char c, const int n )
+{
+    if (n == 0)
+        return NULL;
+    int i;
+    char *p, *here;
+    for (p = str, i = 0, here = NULL ; *p != '\0'; p++) {
+        if (*p == c) {
+            here = p;
+            i++;
+            if (n > 0 && i == n)
+                return here;
+        }
+    }
+    return here;
+}
+
+// TODO: NOT WORKING: path not modified: WHY??
+// Change working directory to basedir of file and change path to basename of file
+// @path    path to file in a different directory
+// Return 1 on success, 0 otherwise
+int
+basedir_change( char *path )
+{
+    char *slash = where_char( path, '/', -1 );
+    if (slash != NULL) {
+        size_t size = slash - path + 1; // +1 for null byte
+        char dirpath [size];
+        strncpy( dirpath, path, size );
+        dirpath[size-1] = '\0';
+        if (chdir( dirpath ) != 0) {
+            err_print( strerror(errno), dirpath );
+            exit( errno );
+        }
+        path = path + size;
+        DEBUG_PRINTF( "from '%s', new directory is '%s', new path is '%s'\n", path - size, dirpath, path );
+        return 1;
+    } else
+        return 0;
+}
 
 // Open a file
 // Returns filled open file structure
@@ -33,8 +79,7 @@ struct open_file_s
 file_open( const char *pathname, const char *mode )
 {
 	struct open_file_s f = OPEN_FILE_S_DEF;
-	f.path = xmalloc( sizeof pathname );
-	strcpy( f.path, pathname );
+	f.path = strdup( pathname ); // TODO: Don't forget to free it
 
  	f.fp = fopen( f.path, mode );
 	if (! f.fp) {
@@ -153,9 +198,11 @@ main( int argc, char *argv[] )
     }
     // Process files
     for (; count_infiles > 0 ; optind++, count_infiles-- ) {
-        // change dir to input file dir
-        struct open_file_s inf  = file_open( argv[optind], "r" );
-        struct open_file_s outf = file_open( OUTFILE_PATH, "w" );
+        char inp [ sizeof argv[optind] ];
+        strcpy( inp, argv[optind] );
+        basedir_change( inp );
+        struct open_file_s inf  = file_open( inp,           "r" );
+        struct open_file_s outf = file_open( OUTFILE_PATH,  "w" );
         file_parse_print( inf, outf );
         file_close( inf );
         file_close( outf );

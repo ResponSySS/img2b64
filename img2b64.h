@@ -32,7 +32,7 @@
 
 // GLOBALS
 #define PROGRAM_NAME        "img2b64"
-#define VERSION             "0.8"
+#define VERSION             "0.04.28" // change it to 2018.05.XX when ready
 
 // ERRORS
 // Sometimes require another argument for clarity (ones with 'y')
