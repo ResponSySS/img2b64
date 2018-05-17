@@ -24,11 +24,12 @@
 #define DEBUG 0
 #endif
 
-// TODO: invalid memory read caused by this (probably bad handling of VA_ARGS)
 #define DEBUG_PRINTF(...) \
     do { if (DEBUG)     fprintf( stderr, "[DEBUG] " __VA_ARGS__ ); } while (0)
 #define DEBUG_WHERE() \
     do { if (DEBUG)     fprintf( stderr, "[DEBUG] %s:%s:%s", __file__, __line__, __func__ ); } while (0)
+#define DEBUG_EXIT()   \
+    do { if (DEBUG)     {   fprintf( stderr, "[DEBUG] exiting now\n" ); exit(1);  } } while (0)
 
 // GLOBALS
 #define PROGRAM_NAME        "img2b64"
@@ -43,10 +44,9 @@
 #define ERR_MSG_BAD_FILE 	"can't open file" 		// y
 #define ERR_MSG_FILE_STREAM "error processing file stream" // y
 
-#define SIZE_FREAD_BUFF 	8192 // arbitrary (?) value taken from sed 'execute.c'
+#define SIZE_FREAD_BUFF 	8192 // exactly 8 KiB (taken from sed 'execute.c')
 
 // OPTIONS
-// TODO: needs a common struct for all options.
 #define SHORTOPTS 		"i::nh"
 
 #define OPT_QUIET       0x1
@@ -56,7 +56,7 @@ struct opt_s {
     char *in_place_suffix;
 };
 extern struct opt_s opt;
-#define OPT_S_DEF           { 0x00, NULL }
+#define OPT_S_DEF           { 0x00, NULL } // TODO: see how default options are initialized in other GNU programs
 
 // FILES
 struct open_file_s {
@@ -66,6 +66,7 @@ struct open_file_s {
 #define OPEN_FILE_S_DEF     { NULL, NULL }
 
 #define OUTFILE_PATH        "/tmp/img2b64.out"
+#define OUTFILE_STDOUT      "/dev/stdout"
 
 
 #endif

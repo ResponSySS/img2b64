@@ -110,26 +110,25 @@ CONTACT\n\
 	exit(status);
 }
 
-// TODO: redo that with opt_s struct
-// TODO: redo that with _va_args to support various options organization by various programs
 // Print options
 void
 opt_print( const int argc, char *argv[] )
 {
-	puts( "---" );
-	printf( "optind==%d; argc==%d\n", optind, argc);
-	printf( "argv==\"");
+	fputs( "---\n", stderr );
+	fprintf( stderr, "optind==%d; argc==%d\n", optind, argc);
+	fprintf( stderr, "argv==\"");
     {
         int i;
         for (i=0 ; i < argc ; i++) {
-            printf( "%s\t", argv[i] );
+            fprintf( stderr, "%s\t", argv[i] );
 	    }
     }
-	printf( "\"\n");
-	printf( "QUIET: [%sSET]\n", opt.opt & OPT_QUIET ? "" : "UN" );
-	printf( "SUFFIX: %s\n", opt.in_place_suffix );
-	printf( "FILE COUNT: %d\n", argc - optind );
-	puts( "---" );
+	fprintf( stderr, "\"\n");
+	fprintf( stderr, "OPT FIELD: 0x%x\n", opt.opt );
+	fprintf( stderr, "QUIET: (%sset)\n", opt.opt & OPT_QUIET ? "" : "un" );
+	fprintf( stderr, "SUFFIX: %s\n", opt.in_place_suffix );
+	fprintf( stderr, "FILE COUNT: %d\n", argc - optind );
+	fputs( "---\n", stderr );
 	
-	fflush( stdout ); // Flush stdout before resuming so it doesn't mix up things
+	fflush( stderr ); // Flush stream buffer before resuming so it doesn't mix up things
 }

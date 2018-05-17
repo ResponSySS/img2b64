@@ -58,16 +58,17 @@ basedir_change( char *path )
     char *slash = where_char( path, '/', -1 );
     if (slash != NULL) {
         size_t size = slash - path + 1; // +1 for null byte
-        char dirpath  [size];
-        char * path_tmp;
+        char dirpath [size];
+        char *path_tmp;
         strncpy( dirpath, path, size );
+        dirpath [size-1] = '\0';
         if (chdir( dirpath ) != 0) {
             err_print( "Can't change directory: %s: %s", strerror(errno), dirpath );
             exit( errno );
         }
-        DEBUG_PRINTF( "from '%s', new directory is '%s', new path is '%s'\n", path, dirpath, path + size );
         path_tmp = strdup( path );
         strcpy( path, path_tmp + size );
+        DEBUG_PRINTF( "from '%s', new directory is '%s', new path is '%s'\n", path_tmp, dirpath, path );
         free( path_tmp );
         return 1;
     }
@@ -80,7 +81,7 @@ struct open_file_s
 file_open( const char *pathname, const char *mode )
 {
 	struct open_file_s f = OPEN_FILE_S_DEF;
-	f.path = strdup( pathname ); // TODO: Don't forget to free it
+	f.path = strdup( pathname ); // freed with file_close()
 
  	f.fp = fopen( f.path, mode );
 	if (! f.fp) {
@@ -100,6 +101,7 @@ file_close( struct open_file_s of )
         err_print( "%s: %s", strerror(errno), of.path );
         exit( errno );
     }
+    free( of.path );
     return 1;
 }
 
@@ -113,14 +115,12 @@ file_parse_print( const struct open_file_s inf, struct open_file_s outf )
     int i = 0;
     size_t read_size = 0;
     // TODO: Why turning this to an array causes 3 times more valgrind errors??
-    char * buf = xmalloc( SIZE_FREAD_BUFF );
+    char * buf = xmalloc( SIZE_FREAD_BUFF + 1);
 
-    // TODO: valgrind errors here
     DEBUG_PRINTF( "Parsing '%s', printing to '%s'\n", inf.path, outf.path );
-    // TODO: valgrind errors here
     // get next string from file
     while ( (read_size = fread( buf, 1, SIZE_FREAD_BUFF, inf.fp )) != 0) {
-        // TODO: valgrind errors here
+        buf [SIZE_FREAD_BUFF] = '\0';
         // parse string
         i += process_buf( buf );
         // print to outfile
@@ -195,7 +195,7 @@ main( int argc, char *argv[] )
         goto GTNoInput;
     }
     else if (opt.opt & OPT_QUIET && ! (opt.opt & OPT_INPLACE)) {
-        fputs( "No file to edit and no printing to stdout, so... nothing to be done!", stderr );
+        fputs( PRINT_PREFIX "No file to edit and no printing to stdout, so... nothing to be done!", stderr );
         exit( EXIT_SUCCESS );
     }
     // Process files
@@ -204,7 +204,7 @@ main( int argc, char *argv[] )
         strcpy( inp, argv[optind] );
         basedir_change( inp );
         struct open_file_s inf  = file_open( inp,           "r" );
-        struct open_file_s outf = file_open( OUTFILE_PATH,  "w" );
+        struct open_file_s outf = file_open( opt.in_place_suffix ? OUTFILE_PATH : OUTFILE_STDOUT ,  "w" );
         file_parse_print( inf, outf );
         file_close( inf );
         file_close( outf );

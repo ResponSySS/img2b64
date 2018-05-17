@@ -1,11 +1,10 @@
-strcpy: does it cause mem problems when string given value with strcpy is given to another function? yes according to valgrind, so:
-    * compare strdup and strcpy with valgrind
-    * replace all strcpy by strdup if needed
+* Fix output stream handling
+    * if in-place edit, output to img2b64.out then overwrite infile
+    * if not in-place edit, output to stdout
 Functions should NOT RETURN AN ALLOCATED STRING, either:
     1) static stack allocate in the func the return it (variable erased on every call)
     2) use `func(src, dest, size)` style
     
-Finish it by debugging with valgrind
 More examples in EXAMPLES
 Can only takes one input FILE? Or do we allow for multiple input files? If we do, is it hard to implement?
 Works on multiple <img> tags per line?
