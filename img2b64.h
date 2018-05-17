@@ -24,7 +24,7 @@
 #define DEBUG 0
 #endif
 
-// TODO: invalid memory read caused by this (probably bad handling of VA_ARGS
+// TODO: invalid memory read caused by this (probably bad handling of VA_ARGS)
 #define DEBUG_PRINTF(...) \
     do { if (DEBUG)     fprintf( stderr, "[DEBUG] " __VA_ARGS__ ); } while (0)
 #define DEBUG_WHERE() \
@@ -32,7 +32,8 @@
 
 // GLOBALS
 #define PROGRAM_NAME        "img2b64"
-#define VERSION             "0.04.28" // change it to 2018.05.XX when ready
+#define VERSION             "0.05.15" // change it to 2018.05.XX when ready
+#define PRINT_PREFIX        PROGRAM_NAME ": "
 
 // ERRORS
 // Sometimes require another argument for clarity (ones with 'y')
@@ -48,14 +49,14 @@
 // TODO: needs a common struct for all options.
 #define SHORTOPTS 		"i::nh"
 
-#define OPT_QUIET       1
-#define OPT_INPLACE     2
+#define OPT_QUIET       0x1
+#define OPT_INPLACE     0x2
 struct opt_s {
     unsigned char opt;
     char *in_place_suffix;
 };
 extern struct opt_s opt;
-#define OPT_S_DEF           { 00, NULL }
+#define OPT_S_DEF           { 0x00, NULL }
 
 // FILES
 struct open_file_s {

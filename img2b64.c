@@ -49,7 +49,6 @@ where_char( char * str, const char c, const int n )
     return here;
 }
 
-// TODO: NOT WORKING: path not modified: WHY??
 // Change working directory to basedir of file and change path to basename of file
 // @path    path to file in a different directory
 // Return 1 on success, 0 otherwise
@@ -59,18 +58,20 @@ basedir_change( char *path )
     char *slash = where_char( path, '/', -1 );
     if (slash != NULL) {
         size_t size = slash - path + 1; // +1 for null byte
-        char dirpath [size];
+        char dirpath  [size];
+        char * path_tmp;
         strncpy( dirpath, path, size );
-        dirpath[size-1] = '\0';
         if (chdir( dirpath ) != 0) {
-            err_print( strerror(errno), dirpath );
+            err_print( "Can't change directory: %s: %s", strerror(errno), dirpath );
             exit( errno );
         }
-        path = path + size;
-        DEBUG_PRINTF( "from '%s', new directory is '%s', new path is '%s'\n", path - size, dirpath, path );
+        DEBUG_PRINTF( "from '%s', new directory is '%s', new path is '%s'\n", path, dirpath, path + size );
+        path_tmp = strdup( path );
+        strcpy( path, path_tmp + size );
+        free( path_tmp );
         return 1;
-    } else
-        return 0;
+    }
+    return 0;
 }
 
 // Open a file
@@ -84,7 +85,7 @@ file_open( const char *pathname, const char *mode )
  	f.fp = fopen( f.path, mode );
 	if (! f.fp) {
 		//err_print( ERR_MSG_BAD_FILE, f.path );
-		err_print( strerror(errno), pathname );
+        err_print( "Can't open file: %s: %s", strerror(errno), pathname );
         exit( errno );
 	}
     return f;
@@ -96,7 +97,7 @@ int
 file_close( struct open_file_s of )
 {
 	if (fclose( of.fp ) != 0) { // this implicitly flushes the buffer too
-		err_print( strerror(errno), of.path );
+        err_print( "%s: %s", strerror(errno), of.path );
         exit( errno );
     }
     return 1;
@@ -125,11 +126,12 @@ file_parse_print( const struct open_file_s inf, struct open_file_s outf )
         // print to outfile
         fwrite( buf, 1, read_size, outf.fp );
     }
+    fprintf( stderr, "\n" );
     // EOF or error?
     if (feof( inf.fp )) {
-        fprintf( stderr, "%s: made %d replacements\n", inf.path, i );
+        fprintf( stderr, PRINT_PREFIX "%s: made %d replacements\n", inf.path, i );
     } else if (ferror( inf.fp )) {
-        err_print( ERR_MSG_FILE_STREAM, NULL );
+        err_print( ERR_MSG_FILE_STREAM );
         exit( EBADF );
     }
     free( buf );
@@ -220,19 +222,19 @@ main( int argc, char *argv[] )
 
 	exit(0);
 
-	fprintf(stderr, "Opening files...\n");
+	fprintf(stderr, PRINT_PREFIX "Opening files...\n");
 	test_file1 = fopen("./Tests/file1.txt", "r");
 	test_file2 = fopen("./Tests/file2.txt", "a");
 
-	fprintf(stderr, "Writing files...\n");
+	fprintf(stderr, PRINT_PREFIX "Writing files...\n");
 	fputs("lol\n", test_file2);
 
-	fprintf(stderr, "Closing files...\n");
+	fprintf(stderr, PRINT_PREFIX "Closing files...\n");
 	fclose(test_file1);
 	fclose(test_file2);
 
 	return EXIT_SUCCESS;
 GTNoInput:
-    err_print( ERR_MSG_NO_INPUT, NULL );
+    err_print( ERR_MSG_NO_INPUT );
     exit( 127 );
 }				/* ----------  end of main  ---------- */

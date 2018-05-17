@@ -25,23 +25,23 @@ static char b64_string_encoded [SIZE_FREAD_BUFF * 2];
 
 // Process file from path and encode to b64 string
 char *
-b64_process_resource( const char *path )
+b64_process_file( const char *path )
 {
     FILE *fp;
     // Open resource to encode
 	if ((fp = fopen( path, "r" )) == NULL) {
-		//err_print( ERR_MSG_BAD_FILE, f.path );
-		err_print( strerror(errno), path );
+		//err_print( "%s: %s", ERR_MSG_BAD_FILE, path );
+		err_print( "%s: %s", strerror(errno), path );
         exit( errno );
     }
     // Encode file
     if (! b64_encode( b64_string_encoded, fp )) {
-		err_print( "Can't encode file to base64 string", path );
+		err_print( "Can't encode file to base64 string: %s", path );
         exit( errno );
     }
     // Close file
 	if (fclose( fp ) != 0) { // this implicitly flushes the buffer too
-		err_print( strerror(errno), path );
+		err_print( "%s: %s", strerror(errno), path );
         exit( errno );
     }
     return b64_string_encoded;

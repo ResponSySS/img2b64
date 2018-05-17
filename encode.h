@@ -15,7 +15,7 @@
 #include <stdlib.h>
 
 char *
-b64_process_resource( const char *path );
+b64_process_file( const char *path );
 
 int
 b64_encode( char *dest, FILE *fp );

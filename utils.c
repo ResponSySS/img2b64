@@ -25,15 +25,20 @@
 #include <sys/types.h>
 #include <stdbool.h>
 #include <sys/stat.h>
+#include <stdarg.h>
 
 
-// TODO: remake it with va_args seriously wth is that bro
 // Print standard-formatted error message
 void
-err_print( const char *err_str, const char *opt )
+err_print( const char * fmt, ... )
 {
-	fprintf( stderr, (opt ? "%s%s: %s\n" : "%s%s\n"), "ERROR: " PROGRAM_NAME ": ", err_str, opt ); 
-    // From C Standard Draft: "If the format is exhausted while arguments remain, the excess arguments are evaluated (as always) but are otherwise ignored"
+    va_list args;
+
+    va_start( args, fmt );
+	fprintf( stderr, PRINT_PREFIX "ERROR: " );
+    vfprintf( stderr, fmt, args );
+	fprintf( stderr, "\n" );
+    va_end( args );
 }
 
 // Print xmalloc failure message
@@ -42,7 +47,7 @@ xmalloc_failed( size_t size )
 {
 	char *err_str;
 	asprintf( &err_str, XMALLOC_ERR_STR, size );
-	err_print( err_str, "" );
+	err_print( err_str );
 
 	exit( EXIT_FAILURE );
 }

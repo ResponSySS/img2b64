@@ -18,7 +18,7 @@
 #define XMALLOC_ERR_STR 	"out of memory allocating %lu bytes\n"
 
 void
-err_print( const char *err_str, const char *opt );
+err_print( const char *fmt, ... );
 
 void
 xmalloc_failed( size_t size );

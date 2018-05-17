@@ -2,7 +2,7 @@ strcpy: does it cause mem problems when string given value with strcpy is given 
     * compare strdup and strcpy with valgrind
     * replace all strcpy by strdup if needed
 Functions should NOT RETURN AN ALLOCATED STRING, either:
-    1) stack allocate in the func the return it (variable erased on every call)
+    1) static stack allocate in the func the return it (variable erased on every call)
     2) use `func(src, dest, size)` style
     
 Finish it by debugging with valgrind

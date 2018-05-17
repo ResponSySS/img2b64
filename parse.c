@@ -77,14 +77,14 @@ extract_src( char src[], const char * img, size_t maxlen )
 	reti = regcomp( &preg, RE_PATTERN, REG_ICASE | REG_EXTENDED );
 	if (reti) {
 		regerror( reti, &preg, err_buf, SIZE_ERR_BUFF );
-		err_print( "Can't compile regex pattern", err_buf );
+		err_print( "Can't compile regex pattern: %s", err_buf );
 		return 0;
 	}
     // Find RE pattern
 	reti = regexec( &preg, img, 2, pm, 0 );
 	if (reti) {
 		regerror( reti, &preg, err_buf, SIZE_ERR_BUFF );
-		err_print( "Can't execute regex pattern", err_buf );
+		err_print( "Can't execute regex pattern: %s", err_buf );
 		return 0;
 	}
 	// Printing matches
@@ -131,14 +131,13 @@ process_buf( char * buf )
             // Strip newlines
             int j = strip_nl( img_full );
             DEBUG_PRINTF( "  %d newlines stripped\n", j );
-            // Extract 'src' parameter
+            // Extract 'src' parameter and process file
 	    	extract_src( src, img_full, SIZE_FREAD_BUFF );
-            // Process file from 'src' string
-            b64_str = b64_process_resource( src );
+            b64_str = b64_process_file( src );
             DEBUG_PRINTF( "base64 result: %s", b64_str );
-            // Change original <img> tag
+            // TODO: Change original <img> tag
 	    } else {
-            err_print( "Incomplete <img> tag" , NULL );
+            err_print( "Incomplete <img> tag" );
         }
 	}
 // while (fgets( buf, SIZE_FREAD_BUFF, infile.fp ) != NULL) {
