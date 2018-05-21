@@ -1,4 +1,0 @@
-# This file should be forbidden for access in order to test file accessing functions
-1 one
-2 two 
-3 three

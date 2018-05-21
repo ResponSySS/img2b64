@@ -20,21 +20,21 @@
 
 
 // DEBUG
-#ifndef DEBUG
+#ifdef NDEBUG
 
 #define DEBUG 0
 #define DEBUG_PRINTF(...)   ((void)0)
 #define DEBUG_WHERE()       ((void)0)
 #define DEBUG_EXIT()        ((void)0)
 
-#else
+#else // ! NDEBUG
 
 #define DEBUG_PRINTF(...) \
-    do { if (DEBUG)     fprintf( stderr, "[DEBUG] " __VA_ARGS__ );                      } while (0)
+    do {    fprintf( stderr, "[DEBUG] " __VA_ARGS__ );                          } while (0)
 #define DEBUG_WHERE() \
-    do { if (DEBUG)     fprintf( stderr, "[DEBUG] %s:%d:%s", __FILE__, __LINE__, __func__ ); } while (0)
+    do {    fprintf( stderr, "[DEBUG] %s:%d:%s", __FILE__, __LINE__, __func__ );} while (0)
 #define DEBUG_EXIT()   \
-    do { if (DEBUG)     { fprintf( stderr, "[DEBUG] exiting now\n" ); exit(1); }        } while (0)
+    do {    fprintf( stderr, "[DEBUG] exiting now\n" ); exit(1);                } while (0)
 
 #endif
 

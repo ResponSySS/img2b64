@@ -40,17 +40,17 @@ endef
 
 ifeq ($(config),debug)
 OBJDIR = obj/Debug
-DEFINES += -DDEBUG
-ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -g -Wall -Iinc/
-ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -g -Wall -Iinc/
+DEFINES +=
+ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -g -Wall -Iinc/ -fstrict-aliasing
+ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -g -Wall -Iinc/ -fstrict-aliasing
 ALL_LDFLAGS += $(LDFLAGS)
 endif
 
 ifeq ($(config),release)
 OBJDIR = obj/Release
 DEFINES += -DNDEBUG
-ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -O2 -Wall -Iinc/
-ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -O2 -Wall -Iinc/
+ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -O2 -Wall -Iinc/ -fstrict-aliasing
+ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -O2 -Wall -Iinc/ -fstrict-aliasing
 ALL_LDFLAGS += $(LDFLAGS) -s
 endif
 

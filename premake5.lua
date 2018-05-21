@@ -6,13 +6,13 @@ project "img2b64"
     language "C"
     targetdir "./bin"
 -- links { "" }
-    buildoptions { "-Wall -Iinc/" }
+    buildoptions { "-Wall -Iinc/ -fstrict-aliasing" }
     links { "b64" }
     
     files { "**.h", "**.c" }
     
     filter "configurations:Debug"
-        defines { "DEBUG" }
+--      defines { "DEBUG" }
         symbols "On"
     
     filter "configurations:Release"
