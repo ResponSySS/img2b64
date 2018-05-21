@@ -29,6 +29,7 @@
 
 #else // ! NDEBUG
 
+#define DEBUG 1
 #define DEBUG_PRINTF(...) \
     do {    fprintf( stderr, "[DEBUG] " __VA_ARGS__ );                          } while (0)
 #define DEBUG_WHERE() \

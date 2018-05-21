@@ -35,7 +35,7 @@ err_print( const char * fmt, ... )
     va_list args;
 
     va_start( args, fmt );
-	fprintf( stderr, PRINT_PREFIX "ERROR: " );
+	fprintf( stderr, PRINT_PREFIX );
     vfprintf( stderr, fmt, args );
 	fprintf( stderr, "\n" );
     va_end( args );
@@ -46,7 +46,7 @@ static inline noreturn void
 xmalloc_failed( size_t size )
 {
 	char *err_str;
-	asprintf( &err_str, XMALLOC_ERR_STR, size );
+	asprintf( &err_str, ERR_ERR XMALLOC_ERR_STR, size );
 	err_print( err_str );
 
 	exit( EXIT_FAILURE );

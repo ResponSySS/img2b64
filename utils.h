@@ -17,6 +17,9 @@
 
 #define XMALLOC_ERR_STR 	"out of memory allocating %lu bytes\n"
 
+#define ERR_ERR             "ERROR: "
+#define ERR_WARN            "Warning: "
+
 void
 err_print( const char *fmt, ... );
 

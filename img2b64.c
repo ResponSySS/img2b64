@@ -67,8 +67,8 @@ split_path( char *restrict path, char *restrict dname, char *restrict bname )
     if (slash) {
         size_t size = slash - path + 1; // +1 for null byte
         if (dname) {
-            strncpy( dname, path, size );
-            dname [--size] = '\0';
+            strncpy( dname, path, --size );
+            dname [size] = '\0';
             while (dname [--size] == '/') // remove trailing '/'
                 dname[size] = '\0';
         }
@@ -98,14 +98,14 @@ pushd( char *path )
             free( dir_prev );
         dir_prev = strdup( getcwd( NULL, 0 ) );
         if (chdir( path ) != 0) {
-                err_print( "Can't change directory: %s: %s", strerror(errno), path );
+                err_print( ERR_ERR "Can't change directory: %s: %s", strerror(errno), path );
                 exit( errno );
         }
         return 1;
     } else { // cd to previous directory
         DEBUG_PRINTF( "Moving to previous directory\n" );
         if (chdir( dir_prev ) != 0) {
-            err_print( "Can't change directory: %s: %s", strerror(errno), dir_prev );
+            err_print( ERR_ERR "Can't change directory: %s: %s", strerror(errno), dir_prev );
             exit( errno );
         }
         return 2;
@@ -121,7 +121,7 @@ basedir_change( char *path )
     char d[strlen( path )], b[strlen( path )];
     if (split_path( path, d, b )) {
         if (chdir( d ) != 0) {
-            err_print( "Can't change directory: %s: %s", strerror(errno), d );
+            err_print( ERR_ERR "Can't change directory: %s: %s", strerror(errno), d );
             exit( errno );
         }
         DEBUG_PRINTF( "New directory is '%s', new path is '%s'\n", d, b );
@@ -143,7 +143,7 @@ file_open( const char *restrict pathname, const char *restrict mode )
  	f.fp = fopen( f.path, mode );
 	if (! f.fp) {
 		//err_print( ERR_MSG_BAD_FILE, f.path );
-        err_print( "Can't open file: %s: %s", strerror(errno), pathname );
+        err_print( ERR_ERR "Can't open file: %s: %s", strerror(errno), pathname );
         exit( errno );
 	}
     return f;
@@ -155,7 +155,7 @@ int
 file_close( struct Open_file of )
 {
 	if (fclose( of.fp ) != 0) { // this implicitly flushes the buffer too
-        err_print( "%s: %s", strerror(errno), of.path );
+        err_print( ERR_ERR "%s: %s", strerror(errno), of.path );
         exit( errno );
     }
     free( of.path );

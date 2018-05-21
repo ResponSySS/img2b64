@@ -33,18 +33,18 @@ b64_process_file( const char *path )
     FILE *fp;
     // Open resource to encode
 	if ((fp = fopen( path, "r" )) == NULL) {
-		//err_print( "%s: %s", ERR_MSG_BAD_FILE, path );
-		err_print( "Can't process file: %s: '%s'", strerror(errno), path );
+		//err_print( ERR_ERR "%s: %s", ERR_MSG_BAD_FILE, path );
+		err_print( ERR_ERR "Can't process file: %s: '%s'", strerror(errno), path );
         exit( errno );
     }
     // Encode file
     if (! b64_encode( b64_string_encoded, fp )) {
-		err_print( "Can't encode file to base64 string: '%s'", path );
+		err_print( ERR_ERR "Can't encode file to base64 string: '%s'", path );
         exit( errno );
     }
     // Close file
 	if (fclose( fp ) != 0) { // this implicitly flushes the buffer too
-		err_print( "Can't close processed file: %s: '%s'", strerror(errno), path );
+		err_print( ERR_ERR "Can't close processed file: %s: '%s'", strerror(errno), path );
         exit( errno );
     }
     return b64_string_encoded;

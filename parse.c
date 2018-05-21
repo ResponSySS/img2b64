@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <regex.h>
 #include <errno.h>
 #include <assert.h>
@@ -28,7 +29,7 @@ static char *g_img_off[2] = { NULL, NULL }; // "<img>" tag start offset [0], end
 
 // Removes newline characters inside string
 // Returns number of newlines removed
-int
+static int
 strip_nl( char * str )
 {
     assert( str );
@@ -39,13 +40,12 @@ strip_nl( char * str )
     return i;
 }
 
-//TODO: make it case-insensitive
 // Locate a substring 
 // @here        pointer to fill with beginning of located substring
 // @haystack    string to search
 // @needle      substring to find
 // Returns 1 if match, 0 if no match (set here to NULL), -1 if incomplete match
-int
+static int
 strinstr( char **here, char *haystack, const char needle[] )
 {
     assert( here && haystack && needle );
@@ -53,17 +53,28 @@ strinstr( char **here, char *haystack, const char needle[] )
     if (haystack == NULL || needle == NULL) {
         return 0;
     }
-    int j;
+    size_t size = strlen( needle );
+    char needle_lc[size+1];
+    char needle_uc[size+1];
+    int i = 0;
+
+    { // Make lower case and upper case version
+        for (; i < (size + 1) ; i++) {
+            needle_lc[i] = tolower( needle[i] );
+            needle_uc[i] = toupper( needle[i] );
+        }
+        needle_lc[i] = '\0', needle_uc[i] = '\0';
+    }
     char *pos;
     for (pos = haystack ; *pos != '\0' ; pos++) {
-        for (j = 0; needle [j] != '\0' ; j++) {
-            if (*(pos + j) == needle[j]) {
-                if (needle[j+1] == '\0') {
+        for (i = 0 ; needle [i] != '\0' ; i++) {
+            if (*(pos + i) == needle_lc[i] || *(pos + i) == needle_uc[i]) {
+                if (needle[i+1] == '\0') {
                     // Match
                     *here = pos;
                     return 1;
                 }
-            } else if (*(pos + j) == '\0') {
+            } else if (*(pos + i) == '\0') {
                 // Incomplete match
                 *here = pos;
                 return -1;
@@ -80,7 +91,7 @@ strinstr( char **here, char *haystack, const char needle[] )
 // @off     array of start offset ([0]) and end offset ([1])
 // @maxlen  max length of string to fill
 // Returns 1 on success, 0 otherwise
-int
+static int
 extract_substr( char str[], const char *off[2], size_t maxlen )
 {
     assert( str && off );
@@ -95,46 +106,71 @@ extract_substr( char str[], const char *off[2], size_t maxlen )
     return 1;
 }
 
-// Extract 'src' parameter from <img> tag in string
-// @src     string to fill
-// @img     <img> string to extract from
-// @maxlen  max length of string to fill
-// Returns 1 on success, 0 otherwise
-int
-extract_src( char src[], const char *img, size_t maxlen )
+// Execute regex against string
+// @str         string to match against
+// @patt        regex pattern
+// @pm          match structure to fill
+// @nmatch      number of submatches in pattern
+// Returns 1 upon success, 0 otherwise
+static int
+match_regex( const char *str, const char *patt, regmatch_t pm[], const size_t nmatch )
 {
-    assert( src && img );
-	int reti = 0;
+    int n = 0; // ret value of regex functions
 	regex_t preg;
-	// [0] matchs the whole regex, [1] is first match, etc.
-	regmatch_t pm[2];
 	char err_buf [SIZE_ERR_BUFF];
 
 	// Compile RE pattern
-	reti = regcomp( &preg, RE_PATTERN_SRC, REG_ICASE | REG_EXTENDED );
-	if (reti) {
-		regerror( reti, &preg, err_buf, SIZE_ERR_BUFF );
-		err_print( "Can't compile regex pattern: %s", err_buf );
+	if ((n = regcomp( &preg, patt, REG_ICASE | REG_EXTENDED ))) {
+		regerror( n, &preg, err_buf, SIZE_ERR_BUFF );
+		err_print( ERR_WARN "Can't compile regex pattern on {%.20s...}: %s", str, err_buf );
 		return 0;
 	}
     // Find RE pattern
-	reti = regexec( &preg, img, 2, pm, 0 );
-	if (reti) {
-		regerror( reti, &preg, err_buf, SIZE_ERR_BUFF );
-		err_print( "Can't execute regex pattern: %s", err_buf );
+	if ((n = regexec( &preg, str, nmatch, pm, 0x0 ))) {
+		regerror( n, &preg, err_buf, SIZE_ERR_BUFF );
+		err_print( ERR_WARN "Can't execute regex pattern on {%.20s...}: %s", str, err_buf );
 		return 0;
 	}
 	// Printing matches
 	if (DEBUG) {
 		int i;
-		for ( i=0 ; i < (sizeof pm / sizeof(regmatch_t)) ; i++) {
-            DEBUG_PRINTF( "    match %s [%d-%d]: {%.*s}\n", i ? "1 ('src')" : "0 (<img>)",
+		for ( i=0 ; i < nmatch ; i++) {
+            DEBUG_PRINTF( "    match %d [%d-%d]: {%.*s}\n", i ? 1 : 0,
                     pm[i].rm_so, pm[i].rm_eo,
-                (int) pm[i].rm_eo - pm[i].rm_so, img + pm[i].rm_so );
+                (int) pm[i].rm_eo - pm[i].rm_so, str + pm[i].rm_so );
 		}
 	}
+    return 1;
+}
 
-    size_t len = pm[1].rm_eo - pm[1].rm_so + 1; // + 1 for terminating null byte
+// Check if src matches base64 data format string
+// @src     string to check
+// Returns 1 on success, 0 otherwise
+static int
+is_base64_src( const char *src )
+{
+    assert( src );
+    regmatch_t pm[2];
+    DEBUG_PRINTF( "Regexing base64 'src'\n" );
+    return match_regex( src, RE_PATTERN_B64_SRC, pm, 1 );
+}
+
+
+// Extract 'src' parameter from <img> tag in string
+// @src     string to fill
+// @img     <img> string to extract from
+// @maxlen  max length of string to fill
+// Returns 1 on success, 0 otherwise
+static int
+extract_src( char src[], const char *img, size_t maxlen )
+{
+    assert( src && img );
+    DEBUG_PRINTF( "Regexing 'src'\n" );
+	regmatch_t pm[2]; // [0] matchs the whole regex, [1] is first match, etc.
+    if (! match_regex( img, RE_PATTERN_SRC, pm, 2 ))
+        return 0;
+
+    size_t len = pm[1].rm_eo - pm[1].rm_so + 1; // + 1 for null byte
     strncpy( src, img + pm[1].rm_so, len - 1 );
     src[len-1] = '\0';
 	return 1;
@@ -150,7 +186,7 @@ extract_src( char src[], const char *img, size_t maxlen )
 // Search and replace <img> tag with base64
 // Returns number of replacements made
 // @buf         string to parse
-int
+static int
 process_buf( char * buf )
 {
     assert( buf );
@@ -165,7 +201,7 @@ process_buf( char * buf )
             g_process_buf_status = PB_INCOMPLETE_MATCH_START;
             // re-fetch stream from offset position
             //int diff = img_off[0] - buf;
-            err_print( "Incomplete <img> tag" );
+            err_print( ERR_WARN "Incomplete <img> tag" );
             return reti;
         }
         // Find end offset
@@ -175,7 +211,7 @@ process_buf( char * buf )
                 g_process_buf_status = PB_INCOMPLETE_MATCH_END;
                 // re-fetch stream from offset position
                 //int diff = img_off[1] - buf;
-                err_print( "Incomplete <img> tag" );
+                err_print( ERR_WARN "Incomplete <img> tag" );
                 return reti;
             }
             DEBUG_PRINTF( "<img> #%d:\n", reti );
@@ -189,7 +225,12 @@ process_buf( char * buf )
             DEBUG_PRINTF( "  %d newlines stripped\n", j );
             // Extract 'src' parameter and process file
 	    	extract_src( src, img_full, SIZE_FREAD_BUFF );
-            //TODO: check src is not base64 string
+            // Check if already a base64 'src'
+            strip_nl( src );
+            if (is_base64_src( src )) {
+                DEBUG_PRINTF( "base64 'src' detected; skipping\n" );
+                continue;
+            }
             b64_str = b64_process_file( src );
             DEBUG_PRINTF( "base64 result: %.50s [...]\n", b64_str );
             //TODO: Change original <img> tag
@@ -251,7 +292,7 @@ parse_file_print( const struct Open_file inf, struct Open_file outf )
     if (feof( inf.fp )) {
         fprintf( stderr, PRINT_PREFIX "%s: made %d replacements\n", inf.path, reti );
     } else if (ferror( inf.fp )) {
-        err_print( ERR_MSG_FILE_STREAM );
+        err_print( ERR_ERR ERR_MSG_FILE_STREAM );
         exit( EBADF );
     }
     free( buf );
