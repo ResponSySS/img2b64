@@ -20,9 +20,6 @@
 void
 err_print( const char *fmt, ... );
 
-void
-xmalloc_failed( size_t size );
-
 void *
 xmalloc( size_t size );
 
@@ -30,7 +27,7 @@ void
 print_version( void );
 
 void
-usage( int status );
+usage( const int status );
 
 void
 opt_print( const int argc, char *argv[] );

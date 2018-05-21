@@ -1,3 +1,5 @@
+* restrict keyword??
+* What about non-ascii characters in HTML pages????
 * Fix output stream handling
     * if in-place edit, output to img2b64.out then overwrite infile
     * if not in-place edit, output to stdout

@@ -42,7 +42,7 @@ err_print( const char * fmt, ... )
 }
 
 // Print xmalloc failure message
-noreturn void
+static inline noreturn void
 xmalloc_failed( size_t size )
 {
 	char *err_str;
@@ -59,8 +59,8 @@ xmalloc( size_t size )
 	void *newmem;
 
 	if (size == 0) 	{ size = 1; }
-	newmem = malloc (size);
-	if (!newmem) 	{ xmalloc_failed (size); }
+	newmem = malloc( size );
+	if (!newmem) 	{ xmalloc_failed( size ); }
 
 	return (newmem);
 }
@@ -79,7 +79,7 @@ Report bugs to: <feedback@sylsau.com>\n",
 
 // Print usage/help message
 noreturn void
-usage( int status )
+usage( const int status )
 {
 	FILE *out = status ? stderr : stdout;
 

@@ -21,15 +21,22 @@
 
 // DEBUG
 #ifndef DEBUG
+
 #define DEBUG 0
-#endif
+#define DEBUG_PRINTF(...)   ((void)0)
+#define DEBUG_WHERE()       ((void)0)
+#define DEBUG_EXIT()        ((void)0)
+
+#else
 
 #define DEBUG_PRINTF(...) \
-    do { if (DEBUG)     fprintf( stderr, "[DEBUG] " __VA_ARGS__ ); } while (0)
+    do { if (DEBUG)     fprintf( stderr, "[DEBUG] " __VA_ARGS__ );                      } while (0)
 #define DEBUG_WHERE() \
-    do { if (DEBUG)     fprintf( stderr, "[DEBUG] %s:%s:%s", __file__, __line__, __func__ ); } while (0)
+    do { if (DEBUG)     fprintf( stderr, "[DEBUG] %s:%d:%s", __FILE__, __LINE__, __func__ ); } while (0)
 #define DEBUG_EXIT()   \
-    do { if (DEBUG)     {   fprintf( stderr, "[DEBUG] exiting now\n" ); exit(1);  } } while (0)
+    do { if (DEBUG)     { fprintf( stderr, "[DEBUG] exiting now\n" ); exit(1); }        } while (0)
+
+#endif
 
 // GLOBALS
 #define PROGRAM_NAME        "img2b64"
@@ -49,21 +56,21 @@
 // OPTIONS
 #define SHORTOPTS 		"i::nh"
 
-#define OPT_QUIET       0x1
-#define OPT_INPLACE     0x2
-struct opt_s {
+enum {
+    OPT_QUIET           = 0x1,
+    OPT_INPLACE         = 0x2
+};
+struct Opt {
     unsigned char opt;
     char *in_place_suffix;
 };
-extern struct opt_s opt;
-#define OPT_S_DEF           { 0x00, NULL } // TODO: see how default options are initialized in other GNU programs
+extern struct Opt opt;
 
 // FILES
-struct open_file_s {
+struct Open_file {
 	FILE *fp;
 	char *path;
 };
-#define OPEN_FILE_S_DEF     { NULL, NULL }
 
 #define OUTFILE_PATH        "/tmp/img2b64.out"
 #define OUTFILE_STDOUT      "/dev/stdout"

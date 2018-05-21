@@ -17,9 +17,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <assert.h>
 
 
-// set up a destination buffer large enough to hold the encoded data
+// destination buffer large enough to hold the encoded data
 static char b64_string_encoded [SIZE_FREAD_BUFF * 2];
 
 
@@ -27,21 +28,23 @@ static char b64_string_encoded [SIZE_FREAD_BUFF * 2];
 char *
 b64_process_file( const char *path )
 {
+    assert( path );
+
     FILE *fp;
     // Open resource to encode
 	if ((fp = fopen( path, "r" )) == NULL) {
 		//err_print( "%s: %s", ERR_MSG_BAD_FILE, path );
-		err_print( "%s: %s", strerror(errno), path );
+		err_print( "Can't process file: %s: '%s'", strerror(errno), path );
         exit( errno );
     }
     // Encode file
     if (! b64_encode( b64_string_encoded, fp )) {
-		err_print( "Can't encode file to base64 string: %s", path );
+		err_print( "Can't encode file to base64 string: '%s'", path );
         exit( errno );
     }
     // Close file
 	if (fclose( fp ) != 0) { // this implicitly flushes the buffer too
-		err_print( "%s: %s", strerror(errno), path );
+		err_print( "Can't close processed file: %s: '%s'", strerror(errno), path );
         exit( errno );
     }
     return b64_string_encoded;
@@ -51,9 +54,11 @@ b64_process_file( const char *path )
 int
 b64_encode( char *dest, FILE *fp )
 {
+    assert( dest );
+
 	char input [SIZE_FREAD_BUFF];
 	base64_encodestate es;
-	int cnt = 0; // store the number of bytes encoded by a single call
+	int cnt = 0; // number of bytes encoded by a single call
 
 	base64_init_encodestate(&es); // initialise the encoder state
 	// gather data from the input and send it to the output
