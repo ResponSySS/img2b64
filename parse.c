@@ -50,25 +50,12 @@ strinstr( char **here, char *haystack, const char needle[] )
 {
     assert( here && haystack && needle );
     *here = NULL;
-    if (haystack == NULL || needle == NULL) {
-        return 0;
-    }
-    size_t size = strlen( needle );
-    char needle_lc[size+1];
-    char needle_uc[size+1];
     int i = 0;
-
-    { // Make lower case and upper case version
-        for (; i < (size + 1) ; i++) {
-            needle_lc[i] = tolower( needle[i] );
-            needle_uc[i] = toupper( needle[i] );
-        }
-        needle_lc[i] = '\0', needle_uc[i] = '\0';
-    }
-    char *pos;
-    for (pos = haystack ; *pos != '\0' ; pos++) {
-        for (i = 0 ; needle [i] != '\0' ; i++) {
-            if (*(pos + i) == needle_lc[i] || *(pos + i) == needle_uc[i]) {
+    char *pos = haystack;
+    
+    for (; *pos != '\0' ; pos++) {
+        for (; needle [i] != '\0' ; i++) {
+            if (*(pos + i) == tolower( needle[i] ) || *(pos + i) == toupper( needle[i] )) {
                 if (needle[i+1] == '\0') {
                     // Match
                     *here = pos;
